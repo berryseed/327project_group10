@@ -11,7 +11,7 @@ const openai = new OpenAI({
 const tokenizer = new natural.WordTokenizer();
 
 class AIService {
-  
+
   /**
    * Analyze task and suggest optimal priority and deadline
    */
@@ -68,7 +68,7 @@ class AIService {
    */
   async getScheduleRecommendations(tasks, userPreferences = {}) {
     try {
-      const taskList = tasks.map(task => 
+      const taskList = tasks.map(task =>
         `- ${task.title} (${task.priority} priority, due: ${task.deadline})`
       ).join('\n');
 
@@ -122,7 +122,7 @@ class AIService {
    */
   async generateTaskSuggestions(existingTasks, userInput) {
     try {
-      const taskHistory = existingTasks.map(task => 
+      const taskHistory = existingTasks.map(task =>
         `${task.title}: ${task.description}`
       ).join('\n');
 
@@ -216,7 +216,7 @@ class AIService {
     }
   }
 
-  // Fallback methods when AI is unavailable
+  // ===== Fallback methods =====
   getFallbackAnalysis(taskData) {
     const priority = taskData.priority === 'medium' ? 'high' : taskData.priority;
     return {
@@ -266,7 +266,7 @@ class AIService {
 
   getFallbackWorkloadAnalysis(tasks) {
     const highPriorityCount = tasks.filter(t => t.priority === 'high').length;
-    const workload = highPriorityCount > 3 ? 'overloaded' : 
+    const workload = highPriorityCount > 3 ? 'overloaded' :
                     highPriorityCount > 1 ? 'balanced' : 'light';
 
     return {
@@ -277,7 +277,45 @@ class AIService {
       riskLevel: highPriorityCount > 3 ? 'high' : 'medium'
     };
   }
+
+  // ===== New AI Full Schedule Planner =====
+  async planFullSchedule(userDescription, userPreferences = {}, constraints = {}) {
+    try {
+      const prompt = `
+You are an AI academic assistant. 
+The user provides the following schedule description: "${userDescription}".
+User preferences: ${JSON.stringify(userPreferences)}
+Constraints: ${JSON.stringify(constraints)}
+Generate a detailed schedule as an array of tasks with:
+- title
+- description
+- estimated_duration (in minutes)
+- priority (urgent, high, medium, low)
+- suggested deadline (ISO format)
+Return only valid JSON.
+      `;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+        max_tokens: 600
+      });
+
+      const aiOutput = response.choices[0].message.content;
+
+      try {
+        return JSON.parse(aiOutput);
+      } catch {
+        console.warn("Failed to parse AI output, returning raw text");
+        return { fallback: aiOutput };
+      }
+    } catch (err) {
+      console.error("Error in planFullSchedule:", err);
+      throw err;
+    }
+  }
 }
 
+// Export a single instance with all methods
 module.exports = new AIService();
-

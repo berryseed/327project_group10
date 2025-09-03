@@ -371,6 +371,56 @@ app.post("/ai/schedule-recommendations", async (req, res) => {
   }
 });
 
+// AI-powered full schedule planner
+app.post("/ai/plan-schedule", async (req, res) => {
+  try {
+    const { userDescription, userPreferences, constraints } = req.body;
+
+    if (!userDescription) {
+      return res.status(400).json({ error: "User description is required" });
+    }
+
+    // Call AI service to generate schedule
+    const tasksFromAI = await aiService.planFullSchedule(userDescription, userPreferences, constraints);
+
+    // If AI returned fallback text instead of JSON
+    if (tasksFromAI.fallback) {
+      return res.status(500).json({ error: "AI output invalid", details: tasksFromAI.fallback });
+    }
+
+    // Save tasks to database
+    const insertedTasks = [];
+    for (const task of tasksFromAI) {
+      const sql = "INSERT INTO tasks (title, description, deadline, priority, estimated_duration, ai_analysis, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+      const aiAnalysisJson = JSON.stringify(task.aiAnalysis || {});
+      
+      const [result] = await db.promise().query(sql, [
+        task.title,
+        task.description,
+        task.deadline,
+        task.priority || 'medium',
+        task.estimated_duration || 60,
+        aiAnalysisJson,
+        'pending'
+      ]);
+
+      task.id = result.insertId;
+      insertedTasks.push(task);
+    }
+
+    res.status(201).json({
+      message: "AI-generated schedule saved successfully",
+      tasks: insertedTasks
+    });
+
+  } catch (error) {
+    console.error("Error planning AI schedule:", error);
+    res.status(500).json({ error: "Failed to plan schedule" });
+  }
+});
+
+
+
 // AI-Powered Task Suggestions
 app.post("/ai/task-suggestions", async (req, res) => {
   try {
