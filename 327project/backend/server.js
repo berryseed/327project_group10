@@ -381,12 +381,14 @@ app.post("/ai/plan-schedule", async (req, res) => {
     }
 
     // Call AI service to generate schedule
-    const tasksFromAI = await aiService.planFullSchedule(userDescription, userPreferences, constraints);
+    const aiResponse = await aiService.planFullSchedule(userDescription, userPreferences, constraints);
 
     // If AI returned fallback text instead of JSON
-    if (tasksFromAI.fallback) {
-      return res.status(500).json({ error: "AI output invalid", details: tasksFromAI.fallback });
+    if (!aiResponse.success) {
+      return res.status(500).json({ error: "AI output invalid", details: aiResponse.fallback });
     }
+
+    const tasksFromAI = aiResponse.data.tasks || aiResponse.data;
 
     // Save tasks to database
     const insertedTasks = [];
@@ -472,7 +474,7 @@ app.post("/ai/enhanced-task", async (req, res) => {
     // Create enhanced task object
     const enhancedTask = {
       ...taskData,
-      aiAnalysis: analysis.analysis || analysis.fallback,
+      aiAnalysis: analysis.success ? analysis.data : analysis.fallback,
       createdAt: new Date().toISOString(),
       status: 'pending'
     };
