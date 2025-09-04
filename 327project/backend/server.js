@@ -21,7 +21,7 @@ app.use(express.json()); // instead of body-parser (modern way)
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "int@2024hashGG",
+  password: process.env.DB_PASSWORD || "berryseed",
   database: process.env.DB_NAME || "taskplanner"
 });
 
