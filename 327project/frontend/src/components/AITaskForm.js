@@ -6,7 +6,13 @@ const AITaskForm = () => {
     title: '',
     description: '',
     deadline: '',
-    priority: 'medium'
+    priority: 'medium',
+    course_code: '',
+    course_name: '',
+    estimated_duration: 60,
+    task_type: 'assignment',
+    difficulty_level: 'medium',
+    tags: []
   });
   
   const [aiAnalysis, setAiAnalysis] = useState(null);
@@ -223,7 +229,79 @@ const AITaskForm = () => {
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
+              <option value="urgent">Urgent</option>
             </select>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Course Code:</label>
+              <input
+                type="text"
+                name="course_code"
+                value={formData.course_code}
+                onChange={handleInputChange}
+                style={{ width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ddd" }}
+                placeholder="e.g., CS327"
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Course Name:</label>
+              <input
+                type="text"
+                name="course_name"
+                value={formData.course_name}
+                onChange={handleInputChange}
+                style={{ width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ddd" }}
+                placeholder="e.g., Software Engineering"
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Task Type:</label>
+              <select
+                name="task_type"
+                value={formData.task_type}
+                onChange={handleInputChange}
+                style={{ width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ddd" }}
+              >
+                <option value="assignment">Assignment</option>
+                <option value="exam">Exam</option>
+                <option value="class">Class</option>
+                <option value="study">Study</option>
+                <option value="project">Project</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Difficulty Level:</label>
+              <select
+                name="difficulty_level"
+                value={formData.difficulty_level}
+                onChange={handleInputChange}
+                style={{ width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ddd" }}
+              >
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Estimated Duration (minutes):</label>
+            <input
+              type="number"
+              name="estimated_duration"
+              value={formData.estimated_duration}
+              onChange={handleInputChange}
+              min="15"
+              step="15"
+              style={{ width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ddd" }}
+              placeholder="60"
+            />
           </div>
 
           <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>

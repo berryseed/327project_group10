@@ -271,9 +271,41 @@ const TaskDashboard = () => {
                         {task.status || 'pending'}
                       </span>
                       
+                      {task.course_code && (
+                        <span style={{ 
+                          padding: "4px 8px", 
+                          borderRadius: "12px", 
+                          fontSize: "12px", 
+                          fontWeight: "bold",
+                          color: "#fff",
+                          background: "#6f42c1"
+                        }}>
+                          {task.course_code}
+                        </span>
+                      )}
+                      
+                      {task.task_type && (
+                        <span style={{ 
+                          padding: "4px 8px", 
+                          borderRadius: "12px", 
+                          fontSize: "12px", 
+                          fontWeight: "bold",
+                          color: "#fff",
+                          background: "#17a2b8"
+                        }}>
+                          {task.task_type.toUpperCase()}
+                        </span>
+                      )}
+                      
                       <span style={{ color: "#666", fontSize: "14px" }}>
                         📅 {formatDate(task.deadline)}
                       </span>
+                      
+                      {task.estimated_duration && (
+                        <span style={{ color: "#666", fontSize: "14px" }}>
+                          ⏱️ {task.estimated_duration}min
+                        </span>
+                      )}
                     </div>
                   </div>
 

@@ -231,6 +231,252 @@ app.post("/scheduler/optimal-schedule", async (req, res) => {
   }
 });
 
+// ===== AVAILABILITY & CLASS SCHEDULE MANAGEMENT =====
+
+// Helper: validate 15-minute increments (HH:mm)
+function isValidFifteenMinuteIncrement(timeStr) {
+  if (!/^\d{2}:\d{2}$/.test(timeStr)) return false;
+  const [hh, mm] = timeStr.split(':').map(n => parseInt(n, 10));
+  if (Number.isNaN(hh) || Number.isNaN(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return false;
+  return mm % 15 === 0;
+}
+
+// Time Blocks: list
+app.get("/availability/blocks", async (req, res) => {
+  try {
+    const blocks = await taskModel.listTimeBlocks(1);
+    res.json(blocks);
+  } catch (error) {
+    console.error("Error listing time blocks:", error);
+    res.status(500).json({ error: "Failed to list time blocks" });
+  }
+});
+
+// Time Blocks: create
+app.post("/availability/blocks", async (req, res) => {
+  try {
+    const { day_of_week, start_time, end_time, block_type, is_recurring, start_date, end_date } = req.body;
+    if (day_of_week === undefined || day_of_week < 0 || day_of_week > 6) {
+      return res.status(400).json({ error: "day_of_week must be 0..6" });
+    }
+    if (!isValidFifteenMinuteIncrement(start_time) || !isValidFifteenMinuteIncrement(end_time)) {
+      return res.status(400).json({ error: "Times must be in HH:mm and 15-minute increments" });
+    }
+    if (start_time >= end_time) {
+      return res.status(400).json({ error: "start_time must be before end_time" });
+    }
+    const created = await taskModel.createTimeBlock({
+      user_id: 1,
+      day_of_week,
+      start_time,
+      end_time,
+      block_type,
+      is_recurring,
+      source: 'user',
+      start_date,
+      end_date
+    });
+    res.status(201).json({ message: "Time block created", block: created });
+  } catch (error) {
+    console.error("Error creating time block:", error);
+    res.status(500).json({ error: "Failed to create time block" });
+  }
+});
+
+// Time Blocks: update
+app.put("/availability/blocks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body || {};
+    if (updates.start_time && !isValidFifteenMinuteIncrement(updates.start_time)) {
+      return res.status(400).json({ error: "start_time must be in 15-minute increments" });
+    }
+    if (updates.end_time && !isValidFifteenMinuteIncrement(updates.end_time)) {
+      return res.status(400).json({ error: "end_time must be in 15-minute increments" });
+    }
+    if (updates.start_time && updates.end_time && updates.start_time >= updates.end_time) {
+      return res.status(400).json({ error: "start_time must be before end_time" });
+    }
+    const success = await taskModel.updateTimeBlock(id, updates);
+    if (!success) return res.status(404).json({ error: "Time block not found or no fields updated" });
+    res.json({ message: "Time block updated" });
+  } catch (error) {
+    console.error("Error updating time block:", error);
+    res.status(500).json({ error: "Failed to update time block" });
+  }
+});
+
+// Time Blocks: delete
+app.delete("/availability/blocks/:id", async (req, res) => {
+  try {
+    const success = await taskModel.deleteTimeBlock(req.params.id);
+    if (!success) return res.status(404).json({ error: "Time block not found" });
+    res.json({ message: "Time block deleted" });
+  } catch (error) {
+    console.error("Error deleting time block:", error);
+    res.status(500).json({ error: "Failed to delete time block" });
+  }
+});
+
+// Exceptions: list
+app.get("/availability/exceptions", async (req, res) => {
+  try {
+    const { start, end } = req.query;
+    const rows = await taskModel.listExceptions(1, { start, end });
+    res.json(rows);
+  } catch (error) {
+    console.error("Error listing exceptions:", error);
+    res.status(500).json({ error: "Failed to list exceptions" });
+  }
+});
+
+// Exceptions: create
+app.post("/availability/exceptions", async (req, res) => {
+  try {
+    const { date, start_time, end_time, block_type, reason } = req.body;
+    if (!date) return res.status(400).json({ error: "date is required (YYYY-MM-DD)" });
+    if (!isValidFifteenMinuteIncrement(start_time) || !isValidFifteenMinuteIncrement(end_time)) {
+      return res.status(400).json({ error: "Times must be in HH:mm and 15-minute increments" });
+    }
+    if (start_time >= end_time) {
+      return res.status(400).json({ error: "start_time must be before end_time" });
+    }
+    const created = await taskModel.createException({ user_id: 1, date, start_time, end_time, block_type, reason });
+    res.status(201).json({ message: "Exception created", exception: created });
+  } catch (error) {
+    console.error("Error creating exception:", error);
+    res.status(500).json({ error: "Failed to create exception" });
+  }
+});
+
+// Exceptions: delete
+app.delete("/availability/exceptions/:id", async (req, res) => {
+  try {
+    const success = await taskModel.deleteException(req.params.id);
+    if (!success) return res.status(404).json({ error: "Exception not found" });
+    res.json({ message: "Exception deleted" });
+  } catch (error) {
+    console.error("Error deleting exception:", error);
+    res.status(500).json({ error: "Failed to delete exception" });
+  }
+});
+
+// Class schedule: list
+app.get("/class-schedule", async (req, res) => {
+  try {
+    const rows = await taskModel.listClassSchedule(1);
+    res.json(rows);
+  } catch (error) {
+    console.error("Error listing class schedule:", error);
+    res.status(500).json({ error: "Failed to list class schedule" });
+  }
+});
+
+// Class schedule: create
+app.post("/class-schedule", async (req, res) => {
+  try {
+    const { course_code, day_of_week, start_time, end_time, location, recurring_start, recurring_end } = req.body;
+    if (!course_code) return res.status(400).json({ error: "course_code is required" });
+    if (day_of_week === undefined || day_of_week < 0 || day_of_week > 6) {
+      return res.status(400).json({ error: "day_of_week must be 0..6" });
+    }
+    if (!isValidFifteenMinuteIncrement(start_time) || !isValidFifteenMinuteIncrement(end_time)) {
+      return res.status(400).json({ error: "Times must be in HH:mm and 15-minute increments" });
+    }
+    if (start_time >= end_time) {
+      return res.status(400).json({ error: "start_time must be before end_time" });
+    }
+    const created = await taskModel.createClassSchedule({ user_id: 1, course_code, day_of_week, start_time, end_time, location, recurring_start, recurring_end });
+    res.status(201).json({ message: "Class schedule created", entry: created });
+  } catch (error) {
+    console.error("Error creating class schedule:", error);
+    res.status(500).json({ error: "Failed to create class schedule" });
+  }
+});
+
+// Class schedule: delete
+app.delete("/class-schedule/:id", async (req, res) => {
+  try {
+    const success = await taskModel.deleteClassSchedule(req.params.id);
+    if (!success) return res.status(404).json({ error: "Class schedule not found" });
+    res.json({ message: "Class schedule deleted" });
+  } catch (error) {
+    console.error("Error deleting class schedule:", error);
+    res.status(500).json({ error: "Failed to delete class schedule" });
+  }
+});
+
+// Schedule validation: detect conflicts and overcommitment
+app.post("/scheduler/validate", async (req, res) => {
+  try {
+    const { candidateSchedule = [] } = req.body; // [{ date: 'YYYY-MM-DD', start: 'HH:mm', end: 'HH:mm', label }]
+    // Load existing unavailable blocks
+    const [blocks, exceptions, classes] = await Promise.all([
+      taskModel.listTimeBlocks(1),
+      taskModel.listExceptions(1, {}),
+      taskModel.listClassSchedule(1)
+    ]);
+
+    // Build a set of daily unavailable intervals
+    const conflicts = [];
+    function toMinutes(t) { const [h, m] = t.split(':').map(x => parseInt(x, 10)); return h * 60 + m; }
+
+    candidateSchedule.forEach(item => {
+      const startMin = toMinutes(item.start);
+      const endMin = toMinutes(item.end);
+      if (startMin % 15 !== 0 || endMin % 15 !== 0) {
+        conflicts.push({ item, reason: 'Not aligned to 15-minute increments' });
+        return;
+      }
+      if (startMin >= endMin) {
+        conflicts.push({ item, reason: 'Start must be before end' });
+        return;
+      }
+      const date = new Date(item.date);
+      const day = date.getDay();
+
+      // Check recurring time_blocks marked unavailable
+      blocks.filter(b => b.day_of_week === day && b.block_type === 'unavailable')
+        .forEach(b => {
+          if (toMinutes(b.start_time) < endMin && toMinutes(b.end_time) > startMin) {
+            conflicts.push({ item, reason: 'Overlaps with unavailable time block' });
+          }
+        });
+
+      // Check class schedule (implicitly unavailable)
+      classes.filter(c => c.day_of_week === day)
+        .forEach(c => {
+          if (toMinutes(c.start_time) < endMin && toMinutes(c.end_time) > startMin) {
+            conflicts.push({ item, reason: `Overlaps with class ${c.course_code}` });
+          }
+        });
+
+      // Check date-specific exceptions (unavailable)
+      exceptions.filter(e => e.date === item.date && e.block_type === 'unavailable')
+        .forEach(e => {
+          if (toMinutes(e.start_time) < endMin && toMinutes(e.end_time) > startMin) {
+            conflicts.push({ item, reason: 'Overlaps with unavailable exception' });
+          }
+        });
+    });
+
+    // Basic overcommit warning: more than 8 hours scheduled in a day
+    const dayTotals = {};
+    candidateSchedule.forEach(i => {
+      const key = i.date;
+      dayTotals[key] = (dayTotals[key] || 0) + (toMinutes(i.end) - toMinutes(i.start));
+    });
+    const warnings = Object.entries(dayTotals)
+      .filter(([, minutes]) => minutes > 8 * 60)
+      .map(([date, minutes]) => ({ date, reason: `Overcommitted: ${Math.round(minutes/60)}h scheduled` }));
+
+    res.json({ success: true, conflicts, warnings, suggestions: warnings.length > 0 ? ['Reduce daily load below 8 hours', 'Spread tasks across multiple days'] : [] });
+  } catch (error) {
+    console.error("Error validating schedule:", error);
+    res.status(500).json({ error: "Failed to validate schedule" });
+  }
+});
+
 // ===== POMODORO TIMER =====
 
 // Start Pomodoro session
@@ -557,6 +803,255 @@ app.put("/user-preferences", async (req, res) => {
     console.error("Error updating user preferences:", error);
     res.status(500).json({ error: "Failed to update user preferences" });
   }
+});
+
+// ===== NOTIFICATION SYSTEM =====
+
+// Get all notifications
+app.get("/notifications", async (req, res) => {
+  try {
+    const notifications = await taskModel.getAllNotifications(1);
+    res.json(notifications);
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+});
+
+// Mark notification as read
+app.put("/notifications/:id/read", async (req, res) => {
+  try {
+    const success = await taskModel.markNotificationAsRead(req.params.id);
+    if (success) {
+      res.json({ message: "Notification marked as read" });
+    } else {
+      res.status(404).json({ error: "Notification not found" });
+    }
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+    res.status(500).json({ error: "Failed to mark notification as read" });
+  }
+});
+
+// Mark all notifications as read
+app.put("/notifications/read-all", async (req, res) => {
+  try {
+    await taskModel.markAllNotificationsAsRead(1);
+    res.json({ message: "All notifications marked as read" });
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+    res.status(500).json({ error: "Failed to mark all notifications as read" });
+  }
+});
+
+// Delete notification
+app.delete("/notifications/:id", async (req, res) => {
+  try {
+    const success = await taskModel.deleteNotification(req.params.id);
+    if (success) {
+      res.json({ message: "Notification deleted" });
+    } else {
+      res.status(404).json({ error: "Notification not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    res.status(500).json({ error: "Failed to delete notification" });
+  }
+});
+
+// Send test notification
+app.post("/notifications/test", async (req, res) => {
+  try {
+    const notification = await taskModel.createNotification({
+      user_id: 1,
+      type: 'test',
+      title: 'Test Notification',
+      message: 'This is a test notification to verify the system is working.',
+      priority: 'medium'
+    });
+    res.json({ message: "Test notification sent", notification });
+  } catch (error) {
+    console.error("Error sending test notification:", error);
+    res.status(500).json({ error: "Failed to send test notification" });
+  }
+});
+
+// Get notification settings
+app.get("/notification-settings", async (req, res) => {
+  try {
+    const settings = await taskModel.getNotificationSettings(1);
+    res.json(settings);
+  } catch (error) {
+    console.error("Error fetching notification settings:", error);
+    res.status(500).json({ error: "Failed to fetch notification settings" });
+  }
+});
+
+// Update notification settings
+app.put("/notification-settings", async (req, res) => {
+  try {
+    const success = await taskModel.updateNotificationSettings(1, req.body);
+    if (success) {
+      res.json({ message: "Notification settings updated" });
+    } else {
+      res.status(404).json({ error: "Settings not found" });
+    }
+  } catch (error) {
+    console.error("Error updating notification settings:", error);
+    res.status(500).json({ error: "Failed to update notification settings" });
+  }
+});
+
+// ===== USER AUTHENTICATION =====
+
+// Register user
+app.post("/auth/register", async (req, res) => {
+  try {
+    const { email, password, firstName, lastName, studentId } = req.body;
+    
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).json({ error: "All required fields must be provided" });
+    }
+
+    const user = await taskModel.createUser({
+      email,
+      password,
+      firstName,
+      lastName,
+      studentId
+    });
+
+    // Generate JWT token (simplified - in production use proper JWT)
+    const token = `mock-jwt-token-${Date.now()}`;
+
+    res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        studentId: user.studentId,
+        createdAt: user.createdAt
+      },
+      token
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ error: "Registration failed" });
+  }
+});
+
+// Login user
+app.post("/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const user = await taskModel.authenticateUser(email, password);
+    
+    if (user) {
+      // Generate JWT token (simplified - in production use proper JWT)
+      const token = `mock-jwt-token-${Date.now()}`;
+      
+      res.json({
+        success: true,
+        message: "Login successful",
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          studentId: user.studentId,
+          lastLogin: new Date().toISOString()
+        },
+        token
+      });
+    } else {
+      res.status(401).json({ error: "Invalid credentials" });
+    }
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// Get current user
+app.get("/auth/me", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    // Mock user data (in production, verify JWT token)
+    const user = await taskModel.getUserById(1);
+    
+    if (user) {
+      res.json({ user });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (error) {
+    console.error("Auth check error:", error);
+    res.status(500).json({ error: "Authentication failed" });
+  }
+});
+
+// Update user profile
+app.put("/auth/profile", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    const success = await taskModel.updateUserProfile(1, req.body);
+    
+    if (success) {
+      const user = await taskModel.getUserById(1);
+      res.json({
+        success: true,
+        message: "Profile updated successfully",
+        user
+      });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (error) {
+    console.error("Profile update error:", error);
+    res.status(500).json({ error: "Profile update failed" });
+  }
+});
+
+// Forgot password
+app.post("/auth/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    // Mock password reset (in production, send actual email)
+    res.json({
+      success: true,
+      message: "Password reset email sent (mock)"
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ error: "Password reset failed" });
+  }
+});
+
+// Logout
+app.post("/auth/logout", (req, res) => {
+  // In production, invalidate the JWT token
+  res.json({ message: "Logged out successfully" });
 });
 
 // ===== COURSE MANAGEMENT =====

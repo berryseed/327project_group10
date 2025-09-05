@@ -3,6 +3,10 @@ import TaskForm from "./TaskForm";
 import AITaskForm from "./components/AITaskForm";
 import TaskDashboard from "./components/TaskDashboard";
 import StudentDashboard from "./components/StudentDashboard";
+import TimeBlockManager from "./components/TimeBlockManager";
+import ProgressTracker from "./components/ProgressTracker";
+import NotificationSystem from "./components/NotificationSystem";
+import UserAuth from "./components/UserAuth";
 
 function App() {
   const [currentView, setCurrentView] = useState('student-dashboard');
@@ -13,6 +17,10 @@ function App() {
       case 'ai-form': return <AITaskForm />;
       case 'dashboard': return <TaskDashboard />;
       case 'basic-form': return <TaskForm />;
+      case 'time-blocks': return <TimeBlockManager />;
+      case 'progress': return <ProgressTracker />;
+      case 'notifications': return <NotificationSystem />;
+      case 'auth': return <UserAuth />;
       default: return <StudentDashboard />;
     }
   };
@@ -111,6 +119,74 @@ function App() {
             }}
           >
             📝 Basic Form
+          </button>
+          
+          <button
+            onClick={() => setCurrentView('time-blocks')}
+            style={{
+              padding: "12px 24px",
+              background: currentView === 'time-blocks' ? "#17a2b8" : "#6c757d",
+              color: "white",
+              border: "none",
+              borderRadius: "25px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "bold",
+              transition: "all 0.3s ease"
+            }}
+          >
+            ⏰ Time Blocks
+          </button>
+          
+          <button
+            onClick={() => setCurrentView('progress')}
+            style={{
+              padding: "12px 24px",
+              background: currentView === 'progress' ? "#28a745" : "#6c757d",
+              color: "white",
+              border: "none",
+              borderRadius: "25px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "bold",
+              transition: "all 0.3s ease"
+            }}
+          >
+            📊 Progress
+          </button>
+          
+          <button
+            onClick={() => setCurrentView('notifications')}
+            style={{
+              padding: "12px 24px",
+              background: currentView === 'notifications' ? "#ffc107" : "#6c757d",
+              color: "white",
+              border: "none",
+              borderRadius: "25px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "bold",
+              transition: "all 0.3s ease"
+            }}
+          >
+            🔔 Notifications
+          </button>
+          
+          <button
+            onClick={() => setCurrentView('auth')}
+            style={{
+              padding: "12px 24px",
+              background: currentView === 'auth' ? "#dc3545" : "#6c757d",
+              color: "white",
+              border: "none",
+              borderRadius: "25px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "bold",
+              transition: "all 0.3s ease"
+            }}
+          >
+            🔐 Auth
           </button>
         </div>
       </div>
