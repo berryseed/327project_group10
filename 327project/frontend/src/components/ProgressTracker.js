@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const ProgressTracker = () => {
   const [tasks, setTasks] = useState([]);
@@ -8,7 +8,6 @@ const ProgressTracker = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState(30);
 
-  const API_BASE = 'http://localhost:5000';
 
   useEffect(() => {
     fetchData();
@@ -17,9 +16,9 @@ const ProgressTracker = () => {
   const fetchData = async () => {
     try {
       const [tasksRes, sessionsRes, analyticsRes] = await Promise.all([
-        axios.get(`${API_BASE}/tasks`),
-        axios.get(`${API_BASE}/study-sessions`),
-        axios.get(`${API_BASE}/study-statistics/${selectedPeriod}`)
+        api.get('/tasks'),
+        api.get('/study-sessions'),
+        api.get(`/study-statistics/${selectedPeriod}`)
       ]);
       
       setTasks(tasksRes.data);

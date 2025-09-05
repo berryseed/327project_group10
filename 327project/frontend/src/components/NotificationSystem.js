@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const NotificationSystem = () => {
   const [notifications, setNotifications] = useState([]);
@@ -17,7 +17,6 @@ const NotificationSystem = () => {
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
 
-  const API_BASE = 'http://localhost:5000';
 
   useEffect(() => {
     fetchData();
@@ -29,8 +28,8 @@ const NotificationSystem = () => {
   const fetchData = async () => {
     try {
       const [tasksRes, notificationsRes] = await Promise.all([
-        axios.get(`${API_BASE}/tasks`),
-        axios.get(`${API_BASE}/notifications`)
+        api.get('/tasks'),
+        api.get('/notifications')
       ]);
       
       setTasks(tasksRes.data);
@@ -101,7 +100,7 @@ const NotificationSystem = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      await axios.put(`${API_BASE}/notifications/${notificationId}/read`);
+      await api.put(`/notifications/${notificationId}/read`);
       setNotifications(prev => 
         prev.map(notif => 
           notif.id === notificationId ? { ...notif, read: true } : notif
@@ -114,7 +113,7 @@ const NotificationSystem = () => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.put(`${API_BASE}/notifications/read-all`);
+      await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
@@ -123,7 +122,7 @@ const NotificationSystem = () => {
 
   const deleteNotification = async (notificationId) => {
     try {
-      await axios.delete(`${API_BASE}/notifications/${notificationId}`);
+      await api.delete(`/notifications/${notificationId}`);
       setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
     } catch (error) {
       console.error('Error deleting notification:', error);
@@ -132,7 +131,7 @@ const NotificationSystem = () => {
 
   const updateSettings = async (newSettings) => {
     try {
-      await axios.put(`${API_BASE}/notification-settings`, newSettings);
+      await api.put('/notification-settings', newSettings);
       setSettings(newSettings);
       setShowSettings(false);
     } catch (error) {
@@ -143,7 +142,7 @@ const NotificationSystem = () => {
 
   const sendTestNotification = async () => {
     try {
-      await axios.post(`${API_BASE}/notifications/test`);
+      await api.post('/notifications/test');
       alert('Test notification sent!');
     } catch (error) {
       console.error('Error sending test notification:', error);

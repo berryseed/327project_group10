@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const AITaskForm = () => {
   const [formData, setFormData] = useState({
@@ -23,7 +23,6 @@ const AITaskForm = () => {
   const [loading, setLoading] = useState(false);
   const [showAI, setShowAI] = useState(false);
 
-  const API_BASE = 'http://localhost:5000';
 
   // Fetch existing tasks on component mount
   useEffect(() => {
@@ -32,7 +31,7 @@ const AITaskForm = () => {
 
   const fetchExistingTasks = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/tasks`);
+      const response = await api.get('/tasks');
       setExistingTasks(response.data);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -56,7 +55,7 @@ const AITaskForm = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${API_BASE}/ai/analyze-task`, formData);
+      const response = await api.post('/ai/analyze-task', formData);
       // Handle the response structure: {success: true, data: {...}} or {success: false, fallback: {...}}
       const analysisData = response.data.success ? response.data.data : response.data.fallback;
       setAiAnalysis(analysisData);
@@ -78,7 +77,7 @@ const AITaskForm = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${API_BASE}/ai/task-suggestions`, {
+      const response = await api.post('/ai/task-suggestions', {
         existingTasks,
         userInput: formData.title
       });
@@ -102,7 +101,7 @@ const AITaskForm = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${API_BASE}/ai/schedule-recommendations`, {
+      const response = await api.post('/ai/schedule-recommendations', {
         tasks: existingTasks,
         userPreferences: { workHours: '9-5', preferredDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] }
       });
@@ -126,7 +125,7 @@ const AITaskForm = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${API_BASE}/ai/workload-analysis`, {
+      const response = await api.post('/ai/workload-analysis', {
         tasks: existingTasks,
         userProductivity: { averageTasksPerDay: 3, preferredWorkTime: 'morning' }
       });
@@ -152,7 +151,7 @@ const AITaskForm = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${API_BASE}/ai/enhanced-task`, formData);
+      const response = await api.post('/ai/enhanced-task', formData);
       alert('✅ AI-enhanced task created successfully!');
       
       // Reset form

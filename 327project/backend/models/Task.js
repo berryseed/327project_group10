@@ -10,6 +10,7 @@ class Task {
     const sql = `
       CREATE TABLE IF NOT EXISTS tasks (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL DEFAULT 1,
         title VARCHAR(255) NOT NULL,
         description TEXT,
         task_type ENUM('assignment', 'exam', 'class', 'study', 'project', 'other') DEFAULT 'other',
@@ -31,11 +32,13 @@ class Task {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         completed_at TIMESTAMP NULL,
-        INDEX idx_course (course_code, semester),
-        INDEX idx_deadline (deadline),
-        INDEX idx_priority (priority),
-        INDEX idx_status (status),
-        INDEX idx_task_type (task_type)
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user (user_id),
+        INDEX idx_course (user_id, course_code, semester),
+        INDEX idx_deadline (user_id, deadline),
+        INDEX idx_priority (user_id, priority),
+        INDEX idx_status (user_id, status),
+        INDEX idx_task_type (user_id, task_type)
       )
     `;
 
@@ -169,6 +172,8 @@ class Task {
         priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
         task_id INT NULL,
         read_status BOOLEAN DEFAULT FALSE,
+        scheduled_at DATETIME NULL,
+        sent_at DATETIME NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -176,7 +181,8 @@ class Task {
         INDEX idx_user (user_id),
         INDEX idx_type (type),
         INDEX idx_priority (priority),
-        INDEX idx_read_status (read_status)
+        INDEX idx_read_status (read_status),
+        INDEX idx_scheduled (scheduled_at)
       )
     `;
 
@@ -323,53 +329,6 @@ class Task {
     }
   }
 
-  // Basic users table (for future authentication)
-  async createUsersTable() {
-    const sql = `
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(255) UNIQUE,
-        password_hash VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `;
-
-    try {
-      await this.db.promise().query(sql);
-      console.log('✅ Users table created/verified successfully');
-    } catch (error) {
-      console.error('❌ Error creating users table:', error);
-      throw error;
-    }
-  }
-
-  // Notifications table (scheduled alerts)
-  async createNotificationsTable() {
-    const sql = `
-      CREATE TABLE IF NOT EXISTS notifications (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT DEFAULT 1,
-        type ENUM('deadline','session_reminder','overdue','daily_summary','weekly_report') NOT NULL,
-        payload JSON,
-        scheduled_at DATETIME,
-        sent_at DATETIME NULL,
-        status ENUM('scheduled','sent','failed','cancelled') DEFAULT 'scheduled',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_user_time (user_id, scheduled_at),
-        INDEX idx_status (status)
-      )
-    `;
-
-    try {
-      await this.db.promise().query(sql);
-      console.log('✅ Notifications table created/verified successfully');
-    } catch (error) {
-      console.error('❌ Error creating notifications table:', error);
-      throw error;
-    }
-  }
 
   // ===== Availability CRUD =====
   async listTimeBlocks(userId = 1) {
@@ -483,8 +442,8 @@ class Task {
     return res.affectedRows > 0;
   }
 
-  // Get all tasks with enhanced student information
-  async getAllTasks() {
+  // Get all tasks with enhanced student information for specific user
+  async getAllTasks(userId = 1) {
     const sql = `
       SELECT t.*, 
              c.course_name, c.subject, c.instructor,
@@ -493,12 +452,13 @@ class Task {
       FROM tasks t
       LEFT JOIN courses c ON t.course_code = c.course_code
       LEFT JOIN study_sessions ss ON t.id = ss.task_id
+      WHERE t.user_id = ?
       GROUP BY t.id
       ORDER BY t.deadline ASC, t.priority DESC
     `;
 
     try {
-      const [rows] = await this.db.promise().query(sql);
+      const [rows] = await this.db.promise().query(sql, [userId]);
       return rows;
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -567,16 +527,17 @@ class Task {
   }
 
   // Create enhanced task with student-specific fields
-  async createEnhancedTask(taskData) {
+  async createEnhancedTask(taskData, userId = 1) {
     const sql = `
       INSERT INTO tasks (
-        title, description, task_type, course_code, course_name, subject,
+        user_id, title, description, task_type, course_code, course_name, subject,
         semester, academic_year, deadline, estimated_duration, priority,
         difficulty_level, tags, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
+      userId,
       taskData.title,
       taskData.description,
       taskData.task_type || 'other',
@@ -730,8 +691,8 @@ class Task {
   // Create notification
   async createNotification(notificationData) {
     const sql = `
-      INSERT INTO notifications (user_id, type, title, message, priority, task_id, read_status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+      INSERT INTO notifications (user_id, type, title, message, priority, task_id, read_status, scheduled_at, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
     const values = [
@@ -741,7 +702,8 @@ class Task {
       notificationData.message,
       notificationData.priority,
       notificationData.task_id || null,
-      false
+      false,
+      notificationData.scheduled_at || null
     ];
 
     try {

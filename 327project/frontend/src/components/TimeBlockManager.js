@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const TimeBlockManager = () => {
   const [timeBlocks, setTimeBlocks] = useState([]);
@@ -24,7 +24,6 @@ const TimeBlockManager = () => {
   });
   const [validation, setValidation] = useState({ conflicts: [], warnings: [], suggestions: [] });
 
-  const API_BASE = 'http://localhost:5000';
 
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -35,9 +34,9 @@ const TimeBlockManager = () => {
   const fetchData = async () => {
     try {
       const [blocksRes, exceptionsRes, classesRes] = await Promise.all([
-        axios.get(`${API_BASE}/availability/blocks`),
-        axios.get(`${API_BASE}/availability/exceptions`),
-        axios.get(`${API_BASE}/class-schedule`)
+        api.get('/availability/blocks'),
+        api.get('/availability/exceptions'),
+        api.get('/class-schedule')
       ]);
       
       setTimeBlocks(blocksRes.data);
@@ -68,7 +67,7 @@ const TimeBlockManager = () => {
         });
       });
 
-      const response = await axios.post(`${API_BASE}/scheduler/validate`, { candidateSchedule: candidate });
+      const response = await api.post('/scheduler/validate', { candidateSchedule: candidate });
       setValidation(response.data);
       if (response.data.conflicts?.length === 0 && response.data.warnings?.length === 0) {
         alert('Schedule looks good! No conflicts or warnings found.');
@@ -90,7 +89,7 @@ const TimeBlockManager = () => {
   const addTimeBlock = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE}/availability/blocks`, formData);
+      await api.post('/availability/blocks', formData);
       setShowAddBlock(false);
       fetchData();
       setFormData({
@@ -115,7 +114,7 @@ const TimeBlockManager = () => {
   const addException = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE}/availability/exceptions`, {
+      await api.post('/availability/exceptions', {
         date: formData.start_date,
         start_time: formData.start_time,
         end_time: formData.end_time,
@@ -133,7 +132,7 @@ const TimeBlockManager = () => {
   const addClassSchedule = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE}/class-schedule`, {
+      await api.post('/class-schedule', {
         course_code: formData.course_code,
         day_of_week: formData.day_of_week,
         start_time: formData.start_time,
@@ -153,7 +152,7 @@ const TimeBlockManager = () => {
   const deleteTimeBlock = async (id) => {
     if (window.confirm('Are you sure you want to delete this time block?')) {
       try {
-        await axios.delete(`${API_BASE}/availability/blocks/${id}`);
+        await api.delete(`/availability/blocks/${id}`);
         fetchData();
       } catch (error) {
         console.error('Error deleting time block:', error);
@@ -165,7 +164,7 @@ const TimeBlockManager = () => {
   const deleteException = async (id) => {
     if (window.confirm('Are you sure you want to delete this exception?')) {
       try {
-        await axios.delete(`${API_BASE}/availability/exceptions/${id}`);
+        await api.delete(`/availability/exceptions/${id}`);
         fetchData();
       } catch (error) {
         console.error('Error deleting exception:', error);

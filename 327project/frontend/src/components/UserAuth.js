@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const UserAuth = ({ onLoggedIn }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,7 +18,6 @@ const UserAuth = ({ onLoggedIn }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API_BASE = 'http://localhost:5000';
 
   useEffect(() => {
     checkAuthStatus();
@@ -28,9 +27,7 @@ const UserAuth = ({ onLoggedIn }) => {
     try {
       const token = localStorage.getItem('authToken');
       if (token) {
-        const response = await axios.get(`${API_BASE}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await api.get('/auth/me');
         setUser(response.data.user);
         setIsLoggedIn(true);
       }
@@ -55,7 +52,7 @@ const UserAuth = ({ onLoggedIn }) => {
     setError('');
 
     try {
-      const response = await axios.post(`${API_BASE}/auth/login`, {
+      const response = await api.post('/auth/login', {
         email: formData.email,
         password: formData.password
       });
@@ -89,7 +86,7 @@ const UserAuth = ({ onLoggedIn }) => {
     }
 
     try {
-      const response = await axios.post(`${API_BASE}/auth/register`, {
+      const response = await api.post('/auth/register', {
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
@@ -120,7 +117,7 @@ const UserAuth = ({ onLoggedIn }) => {
     setError('');
 
     try {
-      const response = await axios.post(`${API_BASE}/auth/forgot-password`, {
+      const response = await api.post('/auth/forgot-password', {
         email: formData.email
       });
 
@@ -140,9 +137,7 @@ const UserAuth = ({ onLoggedIn }) => {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${API_BASE}/auth/logout`, {}, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
-      });
+      await api.post('/auth/logout');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -158,9 +153,7 @@ const UserAuth = ({ onLoggedIn }) => {
     setError('');
 
     try {
-      const response = await axios.put(`${API_BASE}/auth/profile`, formData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
-      });
+      const response = await api.put('/auth/profile', formData);
 
       if (response.data.success) {
         setUser(response.data.user);

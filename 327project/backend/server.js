@@ -17,6 +17,17 @@ const app = express();
 app.use(cors());
 app.use(express.json()); // instead of body-parser (modern way)
 
+// Authentication middleware
+app.use((req, res, next) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (token) {
+    // In production, verify JWT token here
+    // For now, extract user ID from token (mock implementation)
+    req.user = { id: 1 }; // This should be extracted from JWT
+  }
+  next();
+});
+
 // Connect to MySQL
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
@@ -27,6 +38,40 @@ const db = mysql.createConnection({
 
 // Initialize Task model
 const taskModel = new Task(db);
+
+// Notification scheduling function
+async function scheduleDeadlineNotification(userId, taskId, deadline) {
+  try {
+    const deadlineDate = new Date(deadline);
+    const now = new Date();
+    
+    // Schedule notifications at different intervals before deadline
+    const notificationTimes = [
+      { hours: 24, message: 'Task due in 24 hours' },
+      { hours: 2, message: 'Task due in 2 hours' },
+      { hours: 0.5, message: 'Task due in 30 minutes' }
+    ];
+    
+    for (const notif of notificationTimes) {
+      const notifyAt = new Date(deadlineDate.getTime() - (notif.hours * 60 * 60 * 1000));
+      
+      // Only schedule if notification time is in the future
+      if (notifyAt > now) {
+        await taskModel.createNotification({
+          user_id: userId,
+          type: 'deadline_reminder',
+          title: 'Deadline Reminder',
+          message: notif.message,
+          task_id: taskId,
+          priority: notif.hours <= 2 ? 'high' : 'medium',
+          scheduled_at: notifyAt.toISOString()
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error scheduling deadline notification:', error);
+  }
+}
 
 // Check MySQL connection and initialize tables
 db.connect(async (err) => {
@@ -39,10 +84,45 @@ db.connect(async (err) => {
   try {
     await taskModel.initializeTables();
     console.log("✅ Database tables initialized successfully");
+    
+    // Start notification processor
+    startNotificationProcessor();
   } catch (error) {
     console.error("❌ Error initializing tables:", error);
   }
 });
+
+// Notification processor - runs every minute
+function startNotificationProcessor() {
+  setInterval(async () => {
+    try {
+      // Get notifications that are due to be sent
+      const sql = `
+        SELECT * FROM notifications 
+        WHERE scheduled_at IS NOT NULL 
+        AND scheduled_at <= NOW() 
+        AND sent_at IS NULL
+        ORDER BY scheduled_at ASC
+      `;
+      
+      const [notifications] = await db.promise().query(sql);
+      
+      for (const notification of notifications) {
+        // Mark as sent
+        await db.promise().query(
+          'UPDATE notifications SET sent_at = NOW() WHERE id = ?',
+          [notification.id]
+        );
+        
+        console.log(`📧 Notification sent: ${notification.title} to user ${notification.user_id}`);
+      }
+    } catch (error) {
+      console.error('Error processing notifications:', error);
+    }
+  }, 60000); // Run every minute
+  
+  console.log("✅ Notification processor started");
+}
 
 // Default route (test)
 app.get("/", (req, res) => {
@@ -54,7 +134,8 @@ app.get("/", (req, res) => {
 // Get all tasks with enhanced student information
 app.get("/tasks", async (req, res) => {
   try {
-    const tasks = await taskModel.getAllTasks();
+    const userId = req.user?.id || 1; // Get from auth middleware or default
+    const tasks = await taskModel.getAllTasks(userId);
     res.json(tasks);
   } catch (error) {
     console.error("Error fetching tasks:", error);
@@ -89,7 +170,14 @@ app.get("/tasks/deadlines/:days", async (req, res) => {
 app.post("/tasks", async (req, res) => {
   try {
     const taskData = req.body;
-    const newTask = await taskModel.createEnhancedTask(taskData);
+    const userId = req.user?.id || 1;
+    const newTask = await taskModel.createEnhancedTask(taskData, userId);
+    
+    // Schedule deadline notification
+    if (taskData.deadline) {
+      await scheduleDeadlineNotification(userId, newTask.id, taskData.deadline);
+    }
+    
     res.status(201).json({ 
       message: "Task created successfully", 
       task: newTask 

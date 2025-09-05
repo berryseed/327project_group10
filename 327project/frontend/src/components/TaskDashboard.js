@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const TaskDashboard = () => {
   const [tasks, setTasks] = useState([]);
@@ -13,7 +13,6 @@ const TaskDashboard = () => {
   const [aiInsights, setAiInsights] = useState(null);
   const [showAIInsights, setShowAIInsights] = useState(false);
 
-  const API_BASE = 'http://localhost:5000';
 
   useEffect(() => {
     fetchTasks();
@@ -25,7 +24,7 @@ const TaskDashboard = () => {
 
   const fetchTasks = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/tasks`);
+      const response = await api.get('/tasks');
       setTasks(response.data);
       setLoading(false);
     } catch (error) {
@@ -86,7 +85,7 @@ const TaskDashboard = () => {
   const updateTaskStatus = async (taskId, newStatus) => {
     try {
       // Update task status in database
-      await axios.put(`${API_BASE}/tasks/${taskId}`, { status: newStatus });
+      await api.put(`/tasks/${taskId}`, { status: newStatus });
       
       // Update local state
       setTasks(prev => prev.map(task => 
@@ -101,7 +100,7 @@ const TaskDashboard = () => {
   const deleteTask = async (taskId) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
-        await axios.delete(`${API_BASE}/tasks/${taskId}`);
+        await api.delete(`/tasks/${taskId}`);
         setTasks(prev => prev.filter(task => task.id !== taskId));
       } catch (error) {
         console.error('Error deleting task:', error);
@@ -118,7 +117,7 @@ const TaskDashboard = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${API_BASE}/ai/workload-analysis`, {
+      const response = await api.post('/ai/workload-analysis', {
         tasks: tasks,
         userProductivity: { averageTasksPerDay: 3, preferredWorkTime: 'morning' }
       });
