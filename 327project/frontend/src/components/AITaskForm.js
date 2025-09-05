@@ -346,6 +346,18 @@ const AITaskForm = () => {
               <p><strong>Description:</strong> {suggestion.description}</p>
               <p><strong>Priority:</strong> {suggestion.priority}</p>
               <p><strong>Reasoning:</strong> {suggestion.reasoning}</p>
+              {suggestion.estimatedDuration && <p><strong>Estimated Duration:</strong> {suggestion.estimatedDuration}</p>}
+              {suggestion.taskType && <p><strong>Task Type:</strong> {suggestion.taskType}</p>}
+              {suggestion.studyTips && suggestion.studyTips.length > 0 && (
+                <div>
+                  <strong>Study Tips:</strong>
+                  <ul style={{ margin: "5px 0", paddingLeft: "20px" }}>
+                    {suggestion.studyTips.map((tip, tipIndex) => (
+                      <li key={tipIndex}>{tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -364,6 +376,37 @@ const AITaskForm = () => {
             </ol>
             <p><strong>Workload Balance:</strong> {scheduleRecommendations.workloadBalance}</p>
             <p><strong>Estimated Completion:</strong> {scheduleRecommendations.estimatedCompletion}</p>
+            
+            {scheduleRecommendations.studyTips && scheduleRecommendations.studyTips.length > 0 && (
+              <div>
+                <p><strong>Study Tips:</strong></p>
+                <ul>
+                  {scheduleRecommendations.studyTips.map((tip, index) => (
+                    <li key={index}>{tip}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {scheduleRecommendations.breakRecommendations && scheduleRecommendations.breakRecommendations.length > 0 && (
+              <div>
+                <p><strong>Break Recommendations:</strong></p>
+                <ul>
+                  {scheduleRecommendations.breakRecommendations.map((rec, index) => (
+                    <li key={index}>{rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {scheduleRecommendations.deadlineStrategy && (
+              <p><strong>Deadline Strategy:</strong> {scheduleRecommendations.deadlineStrategy}</p>
+            )}
+            
+            {scheduleRecommendations.productivityOptimization && (
+              <p><strong>Productivity Tips:</strong> {scheduleRecommendations.productivityOptimization}</p>
+            )}
+            
             <p><strong>Risk Factors:</strong></p>
             <ul>
               {scheduleRecommendations.riskFactors?.map((risk, index) => (
@@ -382,6 +425,26 @@ const AITaskForm = () => {
             <p><strong>Workload Assessment:</strong> {workloadAnalysis.workloadAssessment}</p>
             <p><strong>Completion Prediction:</strong> {workloadAnalysis.completionPrediction}</p>
             <p><strong>Risk Level:</strong> {workloadAnalysis.riskLevel}</p>
+            
+            {workloadAnalysis.priorityActions && workloadAnalysis.priorityActions.length > 0 && (
+              <div>
+                <p><strong>Priority Actions:</strong></p>
+                <ul>
+                  {workloadAnalysis.priorityActions.map((action, index) => (
+                    <li key={index}>{action}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {workloadAnalysis.studyStrategy && (
+              <p><strong>Study Strategy:</strong> {workloadAnalysis.studyStrategy}</p>
+            )}
+            
+            {workloadAnalysis.timeManagement && (
+              <p><strong>Time Management:</strong> {workloadAnalysis.timeManagement}</p>
+            )}
+            
             <p><strong>Bottlenecks:</strong></p>
             <ul>
               {workloadAnalysis.bottlenecks?.map((bottleneck, index) => (

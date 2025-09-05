@@ -367,6 +367,17 @@ const TaskDashboard = () => {
               <p><strong>Status:</strong> {aiInsights.workloadAssessment}</p>
               <p><strong>Risk Level:</strong> {aiInsights.riskLevel}</p>
               <p><strong>Completion Prediction:</strong> {aiInsights.completionPrediction}</p>
+              
+              {aiInsights.priorityActions && aiInsights.priorityActions.length > 0 && (
+                <div>
+                  <p><strong>Priority Actions:</strong></p>
+                  <ul style={{ margin: "5px 0", paddingLeft: "20px" }}>
+                    {aiInsights.priorityActions.map((action, index) => (
+                      <li key={index}>{action}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div style={{ background: "#fff3cd", padding: "15px", borderRadius: "5px" }}>
@@ -386,6 +397,20 @@ const TaskDashboard = () => {
                 ))}
               </ul>
             </div>
+
+            {aiInsights.studyStrategy && (
+              <div style={{ background: "#f8d7da", padding: "15px", borderRadius: "5px" }}>
+                <h4>🎯 Study Strategy</h4>
+                <p>{aiInsights.studyStrategy}</p>
+              </div>
+            )}
+
+            {aiInsights.timeManagement && (
+              <div style={{ background: "#d4edda", padding: "15px", borderRadius: "5px" }}>
+                <h4>⏰ Time Management</h4>
+                <p>{aiInsights.timeManagement}</p>
+              </div>
+            )}
           </div>
         </div>
       )}

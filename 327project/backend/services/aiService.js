@@ -37,68 +37,142 @@ Return this exact JSON format:
 
   // ===== Task scheduling =====
   async getScheduleRecommendations(tasks, userPreferences = {}) {
-    const taskList = tasks.map(t => `- ${t.title} (${t.priority}, due: ${t.deadline})`).join("\n");
+    const taskDetails = tasks.map(t => ({
+      title: t.title,
+      priority: t.priority,
+      deadline: t.deadline,
+      estimated_duration: t.estimated_duration,
+      task_type: t.task_type,
+      course_code: t.course_code,
+      status: t.status
+    }));
+
     const prompt = `
-Given these tasks:
-${taskList}
+As a time management expert for students, create an optimal study schedule:
 
-User preferences: ${JSON.stringify(userPreferences)}
+STUDENT TASKS:
+${JSON.stringify(taskDetails, null, 2)}
 
-Return ONLY a valid JSON object with this exact format:
+USER PREFERENCES:
+${JSON.stringify(userPreferences, null, 2)}
+
+Create a comprehensive scheduling plan in this EXACT JSON format:
 {
-  "recommendedOrder": ["task1", "task2", "task3"],
+  "recommendedOrder": ["Task 1", "Task 2", "Task 3"],
   "dailySchedule": {
-    "Monday": [{"task": "name", "priority": "high", "estimatedTime": "X hours"}],
-    "Tuesday": [{"task": "name", "priority": "medium", "estimatedTime": "Y hours"}]
+    "Monday": [{"task": "Task name", "priority": "high", "estimatedTime": "X hours", "timeSlot": "9:00-11:00", "studyStrategy": "specific approach"}],
+    "Tuesday": [{"task": "Task name", "priority": "medium", "estimatedTime": "Y hours", "timeSlot": "14:00-16:00", "studyStrategy": "specific approach"}]
   },
   "estimatedCompletion": "X hours (approximately Y work days)",
-  "workloadBalance": "assessment text",
-  "riskFactors": ["risk1", "risk2"]
+  "workloadBalance": "Detailed assessment of schedule balance and sustainability",
+  "riskFactors": ["Specific risk 1", "Specific risk 2"],
+  "studyTips": ["Personalized study tip 1", "Personalized study tip 2"],
+  "breakRecommendations": ["When and how to take breaks"],
+  "deadlineStrategy": "Specific approach to meeting deadlines",
+  "productivityOptimization": "Ways to maximize study efficiency"
 }
+
+Focus on:
+- Academic deadlines and priorities
+- Realistic time blocks and study sessions
+- Energy management and peak performance times
+- Task dependencies and logical sequencing
+- Burnout prevention and sustainable study habits
     `;
-    return this._callAI(prompt, () => this.getFallbackSchedule(tasks));
+    return this._callAI(prompt, () => this.getFallbackSchedule(tasks, userPreferences));
   }
 
   // ===== Generate task suggestions =====
   async generateTaskSuggestions(existingTasks, userInput) {
-    const taskHistory = existingTasks.map(t => `${t.title}: ${t.description}`).join("\n");
+    const taskHistory = existingTasks.map(t => ({
+      title: t.title,
+      description: t.description,
+      task_type: t.task_type,
+      course_code: t.course_code,
+      priority: t.priority,
+      deadline: t.deadline
+    }));
+
     const prompt = `
-Based on the following task history:
-${taskHistory}
+As an academic advisor, analyze this student's current tasks and provide intelligent task suggestions:
 
-And user input: "${userInput}"
+CURRENT TASK PORTFOLIO:
+${JSON.stringify(taskHistory, null, 2)}
 
-Return ONLY a valid JSON object with this exact format:
+STUDENT REQUEST: "${userInput}"
+
+Provide smart task suggestions in this EXACT JSON format:
 {
   "suggestions": [
     {
-      "title": "Task title",
-      "description": "Task description",
+      "title": "Specific, actionable task title",
+      "description": "Detailed description with clear deliverables",
       "priority": "high/medium/low",
-      "reasoning": "Why this task is important"
+      "reasoning": "Academic justification and strategic importance",
+      "estimatedDuration": "X-Y hours",
+      "suggestedDeadline": "YYYY-MM-DD",
+      "taskType": "assignment/exam/project/study/class",
+      "courseCode": "relevant course if applicable",
+      "dependencies": ["any prerequisite tasks"],
+      "studyTips": ["specific study strategy for this task"]
     }
   ],
-  "reasoning": "Overall explanation for these suggestions"
+  "reasoning": "Overall academic strategy explanation",
+  "gapAnalysis": "What's missing from current workload",
+  "academicAdvice": "Broader academic success recommendations"
 }
+
+Focus on:
+- Academic best practices and common student needs
+- Task dependencies and logical sequencing
+- Realistic time estimates for academic work
+- Course-specific requirements and patterns
+- Study efficiency and learning optimization
     `;
-    return this._callAI(prompt, () => this.getFallbackSuggestions(userInput));
+    return this._callAI(prompt, () => this.getFallbackSuggestions(userInput, existingTasks));
   }
 
   // ===== Analyze workload =====
   async analyzeWorkload(tasks, userProductivity = {}) {
-    const prompt = `
-Analyze this workload:
-Tasks: ${JSON.stringify(tasks)}
-User Productivity: ${JSON.stringify(userProductivity)}
+    const taskSummary = tasks.map(t => ({
+      title: t.title,
+      priority: t.priority,
+      deadline: t.deadline,
+      status: t.status,
+      estimated_duration: t.estimated_duration,
+      task_type: t.task_type,
+      course_code: t.course_code
+    }));
 
-Return as JSON with:
-- workloadAssessment
-- completionPrediction
-- bottlenecks
-- recommendations
-- riskLevel
+    const prompt = `
+As an academic productivity expert, analyze this student's workload and provide actionable insights:
+
+STUDENT TASKS:
+${JSON.stringify(taskSummary, null, 2)}
+
+USER PRODUCTIVITY PROFILE:
+${JSON.stringify(userProductivity, null, 2)}
+
+Provide a comprehensive workload analysis in this EXACT JSON format:
+{
+  "workloadAssessment": "Detailed assessment of current workload level (Low/Moderate/High/Overwhelming) with specific reasoning",
+  "completionPrediction": "Realistic timeline prediction based on task complexity and deadlines",
+  "bottlenecks": ["Specific bottleneck 1", "Specific bottleneck 2", "Specific bottleneck 3"],
+  "recommendations": ["Actionable recommendation 1", "Actionable recommendation 2", "Actionable recommendation 3"],
+  "riskLevel": "Low/Medium/High risk assessment with explanation",
+  "priorityActions": ["Immediate action 1", "Immediate action 2"],
+  "studyStrategy": "Personalized study strategy recommendation",
+  "timeManagement": "Specific time management advice"
+}
+
+Focus on:
+- Academic context and deadlines
+- Task dependencies and sequencing
+- Realistic time estimates
+- Burnout prevention
+- Academic success optimization
     `;
-    return this._callAI(prompt, () => this.getFallbackWorkloadAnalysis(tasks));
+    return this._callAI(prompt, () => this.getFallbackWorkloadAnalysis(tasks, userProductivity));
   }
 
   // ===== Full schedule planner =====
@@ -121,38 +195,59 @@ Generate a detailed schedule as JSON array of tasks with:
   // ===== Private method: call AI with fallback =====
   async _callAI(prompt, fallbackFn) {
     try {
-      // Try OpenAI first
-      if (OPENAI_API_KEY) {
+      // Try Google Gemini first (since it's working)
+      if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_api_key_here') {
         try {
-          const response = await this.callOpenAI(prompt);
-          return this.safeParseJSON(response, fallbackFn);
-        } catch (openaiErr) {
-          console.log("OpenAI failed, trying Gemini...", openaiErr.message);
+          console.log("🤖 Trying Gemini API...");
+          const response = await this.callGemini(prompt);
+          const result = this.safeParseJSON(response, fallbackFn);
+          if (result.success) {
+            console.log("✅ Gemini API: Success");
+            return result;
+          } else {
+            console.log("⚠️ Gemini API: JSON parsing failed, trying next API...");
+          }
+        } catch (geminiErr) {
+          console.log("❌ Gemini failed:", geminiErr.message);
         }
       }
 
-      // Try Google Gemini
-      if (GEMINI_API_KEY) {
+      // Try OpenAI
+      if (OPENAI_API_KEY && OPENAI_API_KEY !== 'your_openai_api_key_here') {
         try {
-          const response = await this.callGemini(prompt);
-          return this.safeParseJSON(response, fallbackFn);
-        } catch (geminiErr) {
-          console.log("Gemini failed, trying Anthropic...", geminiErr.message);
+          console.log("🤖 Trying OpenAI API...");
+          const response = await this.callOpenAI(prompt);
+          const result = this.safeParseJSON(response, fallbackFn);
+          if (result.success) {
+            console.log("✅ OpenAI API: Success");
+            return result;
+          } else {
+            console.log("⚠️ OpenAI API: JSON parsing failed, trying next API...");
+          }
+        } catch (openaiErr) {
+          console.log("❌ OpenAI failed:", openaiErr.message);
         }
       }
 
       // Try Anthropic Claude
-      if (ANTHROPIC_API_KEY) {
+      if (ANTHROPIC_API_KEY && ANTHROPIC_API_KEY !== 'your_anthropic_api_key_here') {
         try {
+          console.log("🤖 Trying Anthropic API...");
           const response = await this.callAnthropic(prompt);
-          return this.safeParseJSON(response, fallbackFn);
+          const result = this.safeParseJSON(response, fallbackFn);
+          if (result.success) {
+            console.log("✅ Anthropic API: Success");
+            return result;
+          } else {
+            console.log("⚠️ Anthropic API: JSON parsing failed, using fallback...");
+          }
         } catch (anthropicErr) {
-          console.log("Anthropic failed, using fallback...", anthropicErr.message);
+          console.log("❌ Anthropic failed:", anthropicErr.message);
         }
       }
 
       // All AI services failed, use fallback
-      console.log("All AI services failed, using fallback response");
+      console.log("🔄 All AI services failed, using intelligent fallback response");
       return { success: false, fallback: fallbackFn() };
 
     } catch (err) {
@@ -163,22 +258,31 @@ Generate a detailed schedule as JSON array of tasks with:
 
   // ===== OpenAI API Call =====
   async callOpenAI(prompt) {
+    if (!OPENAI_API_KEY || OPENAI_API_KEY === 'your_openai_api_key_here') {
+      throw new Error('OpenAI API key not configured');
+    }
+    
     const response = await axios.post(OPENAI_API_URL, {
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 400,
-      temperature: 0.7
+      max_tokens: 1000,
+      temperature: 0.3
     }, {
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 30000
     });
     return response.data.choices[0].message.content;
   }
 
   // ===== Google Gemini API Call =====
   async callGemini(prompt) {
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_gemini_api_key_here') {
+      throw new Error('Gemini API key not configured');
+    }
+    
     const response = await axios.post(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       contents: [{
         parts: [{
@@ -186,22 +290,27 @@ Generate a detailed schedule as JSON array of tasks with:
         }]
       }],
       generationConfig: {
-        maxOutputTokens: 400,
-        temperature: 0.7
+        maxOutputTokens: 1000,
+        temperature: 0.3
       }
     }, {
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 30000
     });
     return response.data.candidates[0].content.parts[0].text;
   }
 
   // ===== Anthropic Claude API Call =====
   async callAnthropic(prompt) {
+    if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'your_anthropic_api_key_here') {
+      throw new Error('Anthropic API key not configured');
+    }
+    
     const response = await axios.post(ANTHROPIC_API_URL, {
       model: "claude-3-sonnet-20240229",
-      max_tokens: 400,
+      max_tokens: 1000,
       messages: [{
         role: "user",
         content: prompt
@@ -211,7 +320,8 @@ Generate a detailed schedule as JSON array of tasks with:
         'x-api-key': ANTHROPIC_API_KEY,
         'Content-Type': 'application/json',
         'anthropic-version': '2023-06-01'
-      }
+      },
+      timeout: 30000
     });
     return response.data.content[0].text;
   }
@@ -225,19 +335,132 @@ Generate a detailed schedule as JSON array of tasks with:
       // Remove markdown code blocks if present
       jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
       
-      // Look for JSON objects in the text
-      const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+      // Look for JSON objects in the text - try multiple patterns
+      let jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        // Try to find JSON array
+        jsonMatch = jsonText.match(/\[[\s\S]*\]/);
+      }
+      if (!jsonMatch) {
+        // Try to find any JSON-like structure
+        jsonMatch = jsonText.match(/(\{|\[)[\s\S]*(\}|\])/);
+      }
+      
       if (jsonMatch) {
         jsonText = jsonMatch[0];
       }
       
+      // Try to parse as-is first
+      try {
       const parsed = JSON.parse(jsonText);
       return { success: true, data: parsed };
+      } catch (firstError) {
+        // If that fails, try to fix common issues
+        jsonText = this.fixCommonJSONIssues(jsonText);
+        
+        try {
+          const parsed = JSON.parse(jsonText);
+          return { success: true, data: parsed };
+        } catch (secondError) {
+          // If that still fails, try a more aggressive approach
+          jsonText = this.aggressiveJSONFix(jsonText);
+          
+          try {
+            const parsed = JSON.parse(jsonText);
+            return { success: true, data: parsed };
+          } catch (thirdError) {
+            throw thirdError;
+          }
+        }
+      }
     } catch (error) {
       console.warn("Failed to parse JSON, using fallback. AI response was:", text.substring(0, 200) + "...");
       console.warn("Parse error:", error.message);
       return { success: false, fallback: fallbackFn() };
     }
+  }
+
+  // ===== Aggressive JSON fixing =====
+  aggressiveJSONFix(jsonText) {
+    // Remove all control characters except newlines and tabs
+    jsonText = jsonText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    
+    // Fix newlines in strings by replacing with spaces
+    jsonText = jsonText.replace(/"([^"]*)[\n\r]([^"]*)"/g, '"$1 $2"');
+    
+    // Fix incomplete strings
+    jsonText = jsonText.replace(/"([^"]*)[\n\r]/g, '"$1"');
+    
+    // Fix trailing commas
+    jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Fix missing quotes around property names
+    jsonText = jsonText.replace(/([^"]\w+):/g, '"$1":');
+    
+    // Fix single quotes
+    jsonText = jsonText.replace(/'/g, '"');
+    
+    // Try to close incomplete JSON
+    const openBraces = (jsonText.match(/\{/g) || []).length;
+    const closeBraces = (jsonText.match(/\}/g) || []).length;
+    const openBrackets = (jsonText.match(/\[/g) || []).length;
+    const closeBrackets = (jsonText.match(/\]/g) || []).length;
+    
+    for (let i = 0; i < openBraces - closeBraces; i++) {
+      jsonText += '}';
+    }
+    for (let i = 0; i < openBrackets - closeBrackets; i++) {
+      jsonText += ']';
+    }
+    
+    return jsonText;
+  }
+
+  // ===== Fix common JSON issues =====
+  fixCommonJSONIssues(jsonText) {
+    // Remove any remaining markdown code blocks
+    jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    
+    // Fix control characters and newlines in strings - more aggressive approach
+    jsonText = jsonText.replace(/"([^"]*)[\n\r\t]([^"]*)"/g, '"$1 $2"');
+    jsonText = jsonText.replace(/"([^"]*)[\n\r\t]/g, '"$1"');
+    
+    // Fix unescaped quotes in strings
+    jsonText = jsonText.replace(/"([^"]*)"([^"]*)"([^"]*)"/g, '"$1\\"$2\\"$3"');
+    
+    // Fix missing quotes around property names (but not if already quoted)
+    jsonText = jsonText.replace(/([^"]\w+):/g, '"$1":');
+    
+    // Fix single quotes to double quotes
+    jsonText = jsonText.replace(/'/g, '"');
+    
+    // Fix trailing commas
+    jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Fix incomplete arrays or objects at the end
+    jsonText = jsonText.replace(/,\s*$/, '');
+    
+    // Fix incomplete JSON by trying to close it properly
+    const openBraces = (jsonText.match(/\{/g) || []).length;
+    const closeBraces = (jsonText.match(/\}/g) || []).length;
+    const openBrackets = (jsonText.match(/\[/g) || []).length;
+    const closeBrackets = (jsonText.match(/\]/g) || []).length;
+    
+    // Add missing closing braces/brackets
+    for (let i = 0; i < openBraces - closeBraces; i++) {
+      jsonText += '}';
+    }
+    for (let i = 0; i < openBrackets - closeBrackets; i++) {
+      jsonText += ']';
+    }
+    
+    // Fix incomplete strings at the end
+    jsonText = jsonText.replace(/"([^"]*)$/, '"$1"');
+    
+    // Remove any remaining control characters
+    jsonText = jsonText.replace(/[\x00-\x1F\x7F]/g, ' ');
+    
+    return jsonText;
   }
 
   // ===== Fallback methods =====
@@ -255,7 +478,7 @@ Generate a detailed schedule as JSON array of tasks with:
     };
   }
 
-  getFallbackSchedule(tasks) {
+  getFallbackSchedule(tasks, userPreferences = {}) {
     const sortedTasks = this.sortTasksByPriority(tasks);
     const dailySchedule = this.createDailySchedule(sortedTasks);
     
@@ -264,29 +487,41 @@ Generate a detailed schedule as JSON array of tasks with:
       dailySchedule: dailySchedule,
       estimatedCompletion: this.calculateCompletionTime(tasks),
       workloadBalance: this.assessWorkloadBalance(tasks),
-      riskFactors: this.identifyScheduleRisks(tasks)
+      riskFactors: this.identifyScheduleRisks(tasks),
+      studyTips: this.generateStudyTips(tasks, userPreferences),
+      breakRecommendations: this.getBreakRecommendations(tasks),
+      deadlineStrategy: this.getDeadlineStrategy(tasks),
+      productivityOptimization: this.getProductivityTips(tasks, userPreferences)
     };
   }
 
-  getFallbackSuggestions(userInput) {
-    const suggestions = this.generateSmartSuggestions(userInput);
+  getFallbackSuggestions(userInput, existingTasks = []) {
+    const suggestions = this.generateSmartSuggestions(userInput, existingTasks);
     return { 
       suggestions: suggestions,
-      reasoning: "Generated based on common project patterns and best practices"
+      reasoning: "Generated based on academic best practices and common student needs",
+      gapAnalysis: this.analyzeGaps(existingTasks, userInput),
+      academicAdvice: this.getAcademicAdvice(existingTasks, userInput)
     };
   }
 
-  getFallbackWorkloadAnalysis(tasks) {
+  getFallbackWorkloadAnalysis(tasks, userProductivity = {}) {
     const totalTasks = tasks.length;
-    const highPriorityTasks = tasks.filter(t => t.priority === 'high').length;
+    const highPriorityTasks = tasks.filter(t => t.priority === 'high' || t.priority === 'urgent').length;
+    const pendingTasks = tasks.filter(t => t.status === 'pending' || !t.status).length;
+    const upcomingDeadlines = this.getUpcomingDeadlines(tasks);
+    
     const workloadLevel = this.calculateWorkloadLevel(totalTasks, highPriorityTasks);
     
     return {
-      workloadAssessment: workloadLevel,
+      workloadAssessment: `${workloadLevel} - ${totalTasks} total tasks, ${highPriorityTasks} high priority, ${pendingTasks} pending`,
       completionPrediction: this.predictCompletion(tasks),
       bottlenecks: this.identifyBottlenecks(tasks),
       recommendations: this.generateWorkloadRecommendations(tasks, workloadLevel),
-      riskLevel: this.assessRiskLevel(tasks)
+      riskLevel: this.assessRiskLevel(tasks),
+      priorityActions: this.getPriorityActions(tasks, upcomingDeadlines),
+      studyStrategy: this.getStudyStrategy(tasks, userProductivity),
+      timeManagement: this.getTimeManagementAdvice(tasks, userProductivity)
     };
   }
 
@@ -545,45 +780,135 @@ Generate a detailed schedule as JSON array of tasks with:
     return risks;
   }
 
-  generateSmartSuggestions(userInput) {
+  generateSmartSuggestions(userInput, existingTasks = []) {
     const input = userInput.toLowerCase();
     const suggestions = [];
     
-    if (input.includes('web') || input.includes('website')) {
+    // Analyze existing tasks to provide contextual suggestions
+    const taskTypes = existingTasks.map(t => t.task_type).filter(Boolean);
+    const courses = [...new Set(existingTasks.map(t => t.course_code).filter(Boolean))];
+    const priorities = existingTasks.map(t => t.priority).filter(Boolean);
+    const hasUrgentTasks = priorities.includes('urgent') || priorities.includes('high');
+    
+    // Extract subject/course context from user input
+    const subjectContext = this.extractSubjectContext(input, existingTasks);
+    
+    // Physics-specific suggestions
+    if (input.includes('physics') || subjectContext.includes('physics')) {
       suggestions.push(
-        'Set up development environment and version control',
-        'Create wireframes and user interface mockups',
-        'Implement responsive design for mobile devices',
-        'Set up testing framework and write unit tests',
-        'Deploy to staging environment for testing'
+        { title: 'Review physics formulas and equations', description: 'Create a comprehensive formula sheet for mechanics, thermodynamics, and other topics', priority: 'high', reasoning: 'Essential for physics exam success', estimatedDuration: '2-3 hours', taskType: 'study', studyTips: ['Practice deriving formulas from basic principles', 'Create visual diagrams for complex concepts'] },
+        { title: 'Solve practice problems by topic', description: 'Work through problems systematically by physics topic (mechanics, thermodynamics, etc.)', priority: 'high', reasoning: 'Builds problem-solving skills and identifies weak areas', estimatedDuration: '3-4 hours', taskType: 'study', studyTips: ['Start with easier problems and gradually increase difficulty', 'Time yourself to simulate exam conditions'] },
+        { title: 'Review physics lab reports and experiments', description: 'Go through lab notes and understand experimental procedures and results', priority: 'medium', reasoning: 'Lab concepts often appear in physics exams', estimatedDuration: '1-2 hours', taskType: 'study', studyTips: ['Focus on understanding the physics principles behind each experiment'] }
       );
-    } else if (input.includes('mobile') || input.includes('app')) {
+    }
+    // Math-specific suggestions
+    else if (input.includes('math') || input.includes('calculus') || input.includes('algebra') || subjectContext.includes('math')) {
       suggestions.push(
-        'Research platform requirements and guidelines',
-        'Create user flow diagrams and wireframes',
-        'Set up development environment and tools',
-        'Implement core functionality and user interface',
-        'Test on multiple devices and screen sizes'
+        { title: 'Practice calculus problems by type', description: 'Work through derivatives, integrals, and applications systematically', priority: 'high', reasoning: 'Calculus requires extensive practice to master', estimatedDuration: '3-4 hours', taskType: 'study', studyTips: ['Focus on understanding the concepts, not just memorizing procedures', 'Practice with a variety of problem types'] },
+        { title: 'Create math concept summary sheets', description: 'Organize key formulas, theorems, and problem-solving strategies', priority: 'high', reasoning: 'Helps with quick reference during exams', estimatedDuration: '1-2 hours', taskType: 'study', studyTips: ['Use color coding for different types of problems', 'Include example problems for each concept'] },
+        { title: 'Review homework solutions and corrections', description: 'Go through previous assignments to identify common mistakes', priority: 'medium', reasoning: 'Learning from mistakes prevents repetition', estimatedDuration: '1-2 hours', taskType: 'study', studyTips: ['Focus on understanding why mistakes were made', 'Practice similar problems to reinforce correct methods'] }
       );
-    } else if (input.includes('database') || input.includes('data')) {
+    }
+    // Computer Science/Programming suggestions
+    else if (input.includes('programming') || input.includes('coding') || input.includes('computer science') || input.includes('cs') || subjectContext.includes('computer')) {
       suggestions.push(
-        'Design database schema and relationships',
-        'Set up database server and configure security',
-        'Create data models and migration scripts',
-        'Implement data validation and error handling',
-        'Set up backup and recovery procedures'
+        { title: 'Review programming concepts and syntax', description: 'Go through key programming concepts, data structures, and algorithms', priority: 'high', reasoning: 'Programming exams test both theory and practical knowledge', estimatedDuration: '2-3 hours', taskType: 'study', studyTips: ['Practice coding by hand without IDE assistance', 'Review common algorithms and their time complexity'] },
+        { title: 'Practice coding problems and debugging', description: 'Work through programming exercises and practice debugging techniques', priority: 'high', reasoning: 'Hands-on practice is essential for programming success', estimatedDuration: '3-4 hours', taskType: 'study', studyTips: ['Start with simple problems and build complexity', 'Practice explaining your code logic out loud'] },
+        { title: 'Review project code and documentation', description: 'Go through previous programming projects and understand the code structure', priority: 'medium', reasoning: 'Understanding project patterns helps with exam questions', estimatedDuration: '1-2 hours', taskType: 'study', studyTips: ['Focus on understanding design patterns and best practices'] }
       );
-    } else {
+    }
+    // General exam preparation
+    else if (input.includes('exam') || input.includes('test') || input.includes('quiz') || input.includes('final')) {
       suggestions.push(
-        'Break down the project into smaller, manageable tasks',
-        'Research best practices and gather resources',
-        'Create a detailed project timeline and milestones',
-        'Set up project management and collaboration tools',
-        'Plan for testing, review, and iteration phases'
+        { title: 'Create comprehensive study guide', description: 'Organize all course materials into a structured study guide', priority: 'high', reasoning: 'Essential for systematic exam preparation', estimatedDuration: '2-3 hours', taskType: 'study', studyTips: ['Use active recall techniques while creating the guide', 'Include key concepts, formulas, and examples'] },
+        { title: 'Practice with past exams and sample questions', description: 'Work through previous tests to identify patterns and question types', priority: 'high', reasoning: 'Builds confidence and identifies weak areas', estimatedDuration: '3-4 hours', taskType: 'study', studyTips: ['Time yourself to simulate exam conditions', 'Review answers thoroughly, not just correct ones'] },
+        { title: 'Form study groups or find study partners', description: 'Connect with classmates for collaborative studying and peer teaching', priority: 'medium', reasoning: 'Group study can help clarify difficult concepts', estimatedDuration: '1 hour', taskType: 'study', studyTips: ['Explain concepts to others to test your understanding', 'Use study groups for practice problems and discussions'] }
+      );
+    }
+    // Assignment/Project suggestions
+    else if (input.includes('assignment') || input.includes('homework') || input.includes('project') || input.includes('paper')) {
+      suggestions.push(
+        { title: 'Read assignment requirements thoroughly', description: 'Carefully review all instructions, grading criteria, and deliverables', priority: 'high', reasoning: 'Prevents misunderstandings and ensures completeness', estimatedDuration: '30 minutes', taskType: 'assignment', studyTips: ['Highlight key requirements and deadlines', 'Ask questions if anything is unclear'] },
+        { title: 'Create detailed project timeline', description: 'Break down the assignment into manageable tasks with deadlines', priority: 'high', reasoning: 'Helps manage time and track progress', estimatedDuration: '1 hour', taskType: 'assignment', studyTips: ['Include buffer time for unexpected challenges', 'Set mini-deadlines for each section'] },
+        { title: 'Research and gather resources', description: 'Find relevant materials, references, and tools needed for the assignment', priority: 'medium', reasoning: 'Provides foundation for quality work', estimatedDuration: '2-3 hours', taskType: 'assignment', studyTips: ['Use academic databases and credible sources', 'Take detailed notes with proper citations'] }
+      );
+    }
+    // Web development suggestions
+    else if (input.includes('web') || input.includes('website') || input.includes('frontend') || input.includes('html') || input.includes('css') || input.includes('javascript')) {
+      suggestions.push(
+        { title: 'Set up development environment and version control', description: 'Install necessary tools, set up Git repository, and configure development environment', priority: 'high', reasoning: 'Foundation for web development project', estimatedDuration: '2-3 hours', taskType: 'project', studyTips: ['Use a code editor like VS Code with helpful extensions', 'Learn basic Git commands for version control'] },
+        { title: 'Create wireframes and user interface mockups', description: 'Design the visual layout and user experience before coding', priority: 'high', reasoning: 'Essential planning step before coding', estimatedDuration: '3-4 hours', taskType: 'project', studyTips: ['Use tools like Figma or draw by hand', 'Focus on user experience and accessibility'] },
+        { title: 'Implement responsive design for mobile devices', description: 'Ensure website works well on all screen sizes and devices', priority: 'medium', reasoning: 'Modern web development requirement', estimatedDuration: '4-6 hours', taskType: 'project', studyTips: ['Test on multiple devices and browsers', 'Use CSS media queries for responsive design'] }
+      );
+    }
+    // Context-based suggestions based on existing tasks
+    else {
+      // If user has urgent tasks, focus on time management
+      if (hasUrgentTasks) {
+        suggestions.push(
+          { title: 'Prioritize urgent tasks and create action plan', description: 'Identify the most critical tasks and create a focused action plan', priority: 'high', reasoning: 'Urgent tasks need immediate attention to avoid negative consequences', estimatedDuration: '30 minutes', taskType: 'study', studyTips: ['Use the Eisenhower Matrix to categorize tasks', 'Focus on one urgent task at a time'] }
+        );
+      }
+      
+      // If user has exams coming up
+      if (taskTypes.includes('exam')) {
+        suggestions.push(
+          { title: 'Schedule regular study sessions', description: 'Set up consistent study times for better retention and preparation', priority: 'high', reasoning: 'Spaced repetition improves learning and retention', estimatedDuration: '1 hour', taskType: 'study', studyTips: ['Use the Pomodoro technique (25 min study, 5 min break)', 'Study at the same time each day for consistency'] }
+        );
+      }
+      
+      // If user has multiple courses
+      if (courses.length > 1) {
+        suggestions.push(
+          { title: 'Create master schedule for all courses', description: 'Organize all course deadlines, exams, and assignments in one place', priority: 'medium', reasoning: 'Prevents conflicts and helps balance workload across courses', estimatedDuration: '1 hour', taskType: 'study', studyTips: ['Use a digital calendar or planner app', 'Color-code by course for easy identification'] }
+        );
+      }
+      
+      // General productivity suggestions
+      suggestions.push(
+        { title: 'Set up optimal study environment', description: 'Create a distraction-free study space with all necessary materials', priority: 'medium', reasoning: 'Good study environment improves concentration and productivity', estimatedDuration: '1 hour', taskType: 'study', studyTips: ['Remove distractions like phones and social media', 'Ensure good lighting and comfortable seating'] },
+        { title: 'Review course syllabus and upcoming deadlines', description: 'Stay organized and plan ahead for all courses and assignments', priority: 'medium', reasoning: 'Prevents last-minute stress and missed deadlines', estimatedDuration: '30 minutes', taskType: 'study', studyTips: ['Add all important dates to your calendar', 'Set reminders for upcoming deadlines'] }
       );
     }
     
     return suggestions;
+  }
+
+  // Helper method to extract subject context
+  extractSubjectContext(input, existingTasks) {
+    const subjects = [];
+    const inputLower = input.toLowerCase();
+    
+    // Common subject keywords
+    const subjectKeywords = {
+      'physics': ['physics', 'mechanics', 'thermodynamics', 'quantum', 'electromagnetism'],
+      'math': ['math', 'mathematics', 'calculus', 'algebra', 'geometry', 'statistics'],
+      'computer': ['computer science', 'programming', 'coding', 'software', 'algorithm'],
+      'chemistry': ['chemistry', 'organic', 'inorganic', 'biochemistry'],
+      'biology': ['biology', 'anatomy', 'physiology', 'genetics'],
+      'english': ['english', 'literature', 'writing', 'composition'],
+      'history': ['history', 'historical', 'ancient', 'modern'],
+      'psychology': ['psychology', 'psych', 'behavioral', 'cognitive']
+    };
+    
+    // Check input for subject keywords
+    for (const [subject, keywords] of Object.entries(subjectKeywords)) {
+      if (keywords.some(keyword => inputLower.includes(keyword))) {
+        subjects.push(subject);
+      }
+    }
+    
+    // Check existing tasks for subject context
+    existingTasks.forEach(task => {
+      const taskText = (task.title + ' ' + task.description + ' ' + (task.course_code || '')).toLowerCase();
+      for (const [subject, keywords] of Object.entries(subjectKeywords)) {
+        if (keywords.some(keyword => taskText.includes(keyword))) {
+          subjects.push(subject);
+        }
+      }
+    });
+    
+    return [...new Set(subjects)]; // Remove duplicates
   }
 
   calculateWorkloadLevel(totalTasks, highPriorityTasks) {
@@ -649,6 +974,164 @@ Generate a detailed schedule as JSON array of tasks with:
     if (highPriorityCount > totalTasks * 0.6) return 'High Risk';
     if (highPriorityCount > totalTasks * 0.4) return 'Medium Risk';
     return 'Low Risk';
+  }
+
+  // New helper methods for enhanced fallback responses
+  getUpcomingDeadlines(tasks) {
+    const now = new Date();
+    return tasks.filter(task => {
+      if (!task.deadline) return false;
+      const deadline = new Date(task.deadline);
+      const daysUntil = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+      return daysUntil <= 7 && daysUntil >= 0;
+    });
+  }
+
+  getPriorityActions(tasks, upcomingDeadlines) {
+    const actions = [];
+    
+    if (upcomingDeadlines.length > 0) {
+      actions.push(`Focus on ${upcomingDeadlines[0].title} - due soon`);
+    }
+    
+    const highPriorityPending = tasks.filter(t => 
+      (t.priority === 'high' || t.priority === 'urgent') && 
+      (t.status === 'pending' || !t.status)
+    );
+    
+    if (highPriorityPending.length > 0) {
+      actions.push(`Complete high-priority task: ${highPriorityPending[0].title}`);
+    }
+    
+    return actions;
+  }
+
+  getStudyStrategy(tasks, userProductivity) {
+    const taskTypes = tasks.map(t => t.task_type).filter(Boolean);
+    const hasExams = taskTypes.includes('exam');
+    const hasProjects = taskTypes.includes('project');
+    
+    if (hasExams && hasProjects) {
+      return 'Balanced approach: Alternate between intensive exam study sessions and project work to maintain momentum';
+    } else if (hasExams) {
+      return 'Focused exam preparation: Use spaced repetition and active recall techniques';
+    } else if (hasProjects) {
+      return 'Project-focused: Break large projects into daily milestones with regular progress reviews';
+    }
+    
+    return 'General study strategy: Use Pomodoro technique with 25-minute focused sessions';
+  }
+
+  getTimeManagementAdvice(tasks, userProductivity) {
+    const totalTasks = tasks.length;
+    const highPriorityTasks = tasks.filter(t => t.priority === 'high' || t.priority === 'urgent').length;
+    
+    if (totalTasks > 8) {
+      return 'Consider time-blocking: Allocate specific time slots for each task type to avoid context switching';
+    } else if (highPriorityTasks > 3) {
+      return 'Prioritize ruthlessly: Focus on high-impact tasks first and consider delegating or postponing lower-priority items';
+    }
+    
+    return 'Maintain current pace: Your workload is manageable with good time management practices';
+  }
+
+  analyzeGaps(existingTasks, userInput) {
+    const taskTypes = existingTasks.map(t => t.task_type).filter(Boolean);
+    const gaps = [];
+    
+    if (!taskTypes.includes('study') && userInput.toLowerCase().includes('exam')) {
+      gaps.push('Missing dedicated study time for exam preparation');
+    }
+    
+    if (!taskTypes.includes('project') && userInput.toLowerCase().includes('project')) {
+      gaps.push('No project planning or milestone tasks identified');
+    }
+    
+    if (existingTasks.length < 3) {
+      gaps.push('Consider breaking down large tasks into smaller, manageable pieces');
+    }
+    
+    return gaps.length > 0 ? gaps.join('; ') : 'Current task portfolio appears well-balanced';
+  }
+
+  getAcademicAdvice(existingTasks, userInput) {
+    const courses = [...new Set(existingTasks.map(t => t.course_code).filter(Boolean))];
+    const advice = [];
+    
+    if (courses.length > 4) {
+      advice.push('You have many courses - consider creating a master schedule to balance workload across subjects');
+    }
+    
+    if (userInput.toLowerCase().includes('overwhelmed') || userInput.toLowerCase().includes('stress')) {
+      advice.push('Consider using the Pomodoro technique and taking regular breaks to manage stress');
+    }
+    
+    advice.push('Regular review of your task list and priorities will help maintain academic success');
+    
+    return advice.join('; ');
+  }
+
+  generateStudyTips(tasks, userPreferences) {
+    const tips = [];
+    const taskTypes = tasks.map(t => t.task_type).filter(Boolean);
+    
+    if (taskTypes.includes('exam')) {
+      tips.push('Use active recall techniques for exam preparation');
+      tips.push('Create summary sheets for each subject');
+    }
+    
+    if (taskTypes.includes('project')) {
+      tips.push('Break large projects into daily milestones');
+      tips.push('Set up regular progress check-ins');
+    }
+    
+    tips.push('Use the Pomodoro technique for focused study sessions');
+    tips.push('Take breaks every 90 minutes to maintain productivity');
+    
+    return tips;
+  }
+
+  getBreakRecommendations(tasks) {
+    const totalHours = tasks.reduce((sum, task) => {
+      const duration = task.estimated_duration || 60;
+      return sum + (duration / 60);
+    }, 0);
+    
+    if (totalHours > 6) {
+      return ['Take a 15-minute break every 2 hours', 'Include a longer 30-minute break for meals'];
+    } else if (totalHours > 4) {
+      return ['Take a 10-minute break every 90 minutes'];
+    }
+    
+    return ['Take a 5-minute break every hour'];
+  }
+
+  getDeadlineStrategy(tasks) {
+    const upcomingDeadlines = this.getUpcomingDeadlines(tasks);
+    
+    if (upcomingDeadlines.length > 2) {
+      return 'Multiple deadlines approaching - prioritize by urgency and impact, consider asking for extensions if needed';
+    } else if (upcomingDeadlines.length === 1) {
+      return 'Single deadline focus - allocate extra time to ensure quality completion';
+    }
+    
+    return 'No immediate deadlines - use this time to get ahead on future assignments';
+  }
+
+  getProductivityTips(tasks, userPreferences) {
+    const tips = [];
+    
+    tips.push('Start with your most challenging task when energy is highest');
+    tips.push('Use time-blocking to minimize context switching');
+    tips.push('Eliminate distractions by using focus apps or study environments');
+    
+    if (userPreferences.preferredWorkTime === 'morning') {
+      tips.push('Schedule complex tasks during your peak morning hours');
+    } else if (userPreferences.preferredWorkTime === 'evening') {
+      tips.push('Reserve evening hours for your most important work');
+    }
+    
+    return tips;
   }
 }
 

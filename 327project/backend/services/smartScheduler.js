@@ -214,17 +214,44 @@ class SmartScheduler {
       return acc;
     }, {});
     
+    // Analyze deadlines and priorities
+    const urgentTasks = tasks.filter(t => t.priority === 'urgent' || t.priority === 'high');
+    const upcomingDeadlines = tasks.filter(t => {
+      if (!t.deadline) return false;
+      const deadline = new Date(t.deadline);
+      const now = new Date();
+      const daysUntil = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+      return daysUntil <= 3 && daysUntil >= 0;
+    });
+    
     // Tip based on task types
     if (taskTypes.exam > 0) {
-      tips.push("📚 Schedule exam preparation during your most productive hours");
+      tips.push("📚 Schedule exam preparation during your most productive hours (usually morning)");
+      tips.push("🧠 Use active recall techniques - test yourself instead of just re-reading");
+      tips.push("📝 Create summary sheets for each subject to review before exams");
     }
     
     if (taskTypes.assignment > 0) {
-      tips.push("✍️ Break down large assignments into smaller study sessions");
+      tips.push("✍️ Break down large assignments into smaller, manageable chunks");
+      tips.push("📋 Start with the hardest parts first when your energy is highest");
+      tips.push("⏰ Set mini-deadlines for each section to stay on track");
     }
     
     if (taskTypes.project > 0) {
-      tips.push("🎯 Allocate longer study blocks for complex projects");
+      tips.push("🎯 Allocate longer study blocks (2-3 hours) for complex projects");
+      tips.push("🔄 Plan regular progress reviews to catch issues early");
+      tips.push("📊 Create a project timeline with clear milestones");
+    }
+    
+    // Tip based on urgency
+    if (urgentTasks.length > 2) {
+      tips.push("🚨 You have multiple urgent tasks - prioritize by deadline and impact");
+      tips.push("💪 Consider asking for extensions on lower-priority items if needed");
+    }
+    
+    if (upcomingDeadlines.length > 0) {
+      tips.push(`⏰ ${upcomingDeadlines.length} deadline(s) approaching - focus on these first`);
+      tips.push("🎯 Use the Pomodoro technique (25 min work, 5 min break) for intense focus");
     }
     
     // Tip based on time slots
@@ -238,6 +265,7 @@ class SmartScheduler {
     
     if (morningSlots.length > 0) {
       tips.push("🌅 Use morning slots for difficult subjects when your mind is fresh");
+      tips.push("☀️ Morning study sessions are typically 40% more productive");
     }
     
     // Tip based on workload
@@ -246,8 +274,16 @@ class SmartScheduler {
       .reduce((sum, slot) => sum + slot.duration, 0);
     
     if (totalStudyTime > 300) { // More than 5 hours
-      tips.push("⏰ Consider reducing study time to maintain focus and prevent burnout");
+      tips.push("⏰ Consider reducing daily study time to maintain focus and prevent burnout");
+      tips.push("🧘 Take longer breaks (15-30 min) between intensive study sessions");
+    } else if (totalStudyTime < 120) { // Less than 2 hours
+      tips.push("📈 You have light study time - use it to get ahead on future assignments");
     }
+    
+    // General productivity tips
+    tips.push("📱 Eliminate distractions by putting your phone in another room");
+    tips.push("🏃‍♂️ Take a 10-minute walk between study sessions to refresh your mind");
+    tips.push("💧 Stay hydrated and have healthy snacks nearby");
     
     return tips;
   }
