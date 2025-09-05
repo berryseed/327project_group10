@@ -339,6 +339,7 @@ const StudentDashboard = () => {
       {activeTab === 'courses' && (
         <div style={{ background: "#fff", borderRadius: "10px", boxShadow: "0 2px 10px rgba(0,0,0,0.1)", padding: "20px" }}>
           <h2 style={{ margin: "0 0 20px 0", color: "#333" }}>🎓 My Courses</h2>
+          
           {courses.length === 0 ? (
             <p style={{ textAlign: "center", color: "#666" }}>No courses added yet. Add your first course!</p>
           ) : (

@@ -764,6 +764,17 @@ app.post("/study-sessions", async (req, res) => {
   }
 });
 
+// List study sessions
+app.get("/study-sessions", async (req, res) => {
+  try {
+    const sessions = await taskModel.listStudySessions(req.query);
+    res.json(sessions);
+  } catch (error) {
+    console.error("Error listing study sessions:", error);
+    res.status(500).json({ error: "Failed to list study sessions" });
+  }
+});
+
 // Get study statistics
 app.get("/study-statistics/:days", async (req, res) => {
   try {

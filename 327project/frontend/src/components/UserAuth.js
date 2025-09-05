@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const UserAuth = () => {
+const UserAuth = ({ onLoggedIn }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
@@ -66,6 +66,7 @@ const UserAuth = () => {
         setIsLoggedIn(true);
         setShowLogin(false);
         setFormData({ email: '', password: '', confirmPassword: '', firstName: '', lastName: '', studentId: '' });
+        if (onLoggedIn) onLoggedIn();
       } else {
         setError(response.data.message || 'Login failed');
       }
@@ -102,6 +103,7 @@ const UserAuth = () => {
         setIsLoggedIn(true);
         setShowRegister(false);
         setFormData({ email: '', password: '', confirmPassword: '', firstName: '', lastName: '', studentId: '' });
+        if (onLoggedIn) onLoggedIn();
       } else {
         setError(response.data.message || 'Registration failed');
       }

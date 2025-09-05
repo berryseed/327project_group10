@@ -648,6 +648,39 @@ class Task {
     }
   }
 
+  // List study sessions with optional filters
+  async listStudySessions({ task_id, days } = {}) {
+    const conditions = [];
+    const values = [];
+    let sql = `
+      SELECT 
+        ss.id, ss.task_id, ss.start_time, ss.end_time, ss.duration, ss.session_type, ss.productivity_score, ss.notes,
+        t.title as task_title
+      FROM study_sessions ss
+      LEFT JOIN tasks t ON t.id = ss.task_id
+    `;
+    if (task_id) {
+      conditions.push('ss.task_id = ?');
+      values.push(task_id);
+    }
+    if (days) {
+      conditions.push('ss.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)');
+      values.push(parseInt(days, 10));
+    }
+    if (conditions.length > 0) {
+      sql += ' WHERE ' + conditions.join(' AND ');
+    }
+    sql += ' ORDER BY ss.start_time DESC';
+
+    try {
+      const [rows] = await this.db.promise().query(sql, values);
+      return rows;
+    } catch (error) {
+      console.error('Error listing study sessions:', error);
+      throw error;
+    }
+  }
+
   // Get user preferences
   async getUserPreferences(userId = 1) {
     const sql = `SELECT * FROM user_preferences WHERE user_id = ?`;

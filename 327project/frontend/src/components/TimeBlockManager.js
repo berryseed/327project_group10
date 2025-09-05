@@ -22,6 +22,7 @@ const TimeBlockManager = () => {
     recurring_start: '',
     recurring_end: ''
   });
+  const [validation, setValidation] = useState({ conflicts: [], warnings: [], suggestions: [] });
 
   const API_BASE = 'http://localhost:5000';
 
@@ -46,6 +47,35 @@ const TimeBlockManager = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
       setLoading(false);
+    }
+  };
+
+  const validateSchedule = async () => {
+    try {
+      // Build a simple candidate schedule from class schedule and preferred/available blocks
+      const today = new Date();
+      const toISODate = (d) => d.toISOString().split('T')[0];
+      const next7 = Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        return d;
+      });
+      const candidate = [];
+      next7.forEach(d => {
+        const day = d.getDay();
+        classSchedule.filter(c => c.day_of_week === day).forEach(c => {
+          candidate.push({ date: toISODate(d), start: c.start_time, end: c.end_time, label: `Class ${c.course_code}` });
+        });
+      });
+
+      const response = await axios.post(`${API_BASE}/scheduler/validate`, { candidateSchedule: candidate });
+      setValidation(response.data);
+      if (response.data.conflicts?.length === 0 && response.data.warnings?.length === 0) {
+        alert('Schedule looks good! No conflicts or warnings found.');
+      }
+    } catch (error) {
+      console.error('Error validating schedule:', error);
+      alert('Failed to validate schedule');
     }
   };
 
@@ -179,6 +209,19 @@ const TimeBlockManager = () => {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
           <h2>⏰ Time Block Management</h2>
           <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              onClick={validateSchedule}
+              style={{
+                padding: "10px 20px",
+                background: "#007bff",
+                color: "#fff",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer"
+              }}
+            >
+              ✅ Validate Schedule
+            </button>
             <button
               onClick={() => setShowAddBlock(true)}
               style={{
@@ -370,6 +413,43 @@ const TimeBlockManager = () => {
           )}
         </div>
       </div>
+
+      {/* Validation Results */}
+      {(validation.conflicts?.length || validation.warnings?.length || validation.suggestions?.length) ? (
+        <div style={{ background: "#fff", borderRadius: "8px", boxShadow: "0 0 10px rgba(0,0,0,0.1)", padding: "20px", marginBottom: "20px" }}>
+          <h3>🧪 Schedule Validation</h3>
+          {validation.conflicts?.length > 0 && (
+            <div style={{ background: "#ffebee", padding: "15px", borderRadius: "5px", marginBottom: "10px" }}>
+              <strong>Conflicts:</strong>
+              <ul style={{ margin: "8px 0 0 18px" }}>
+                {validation.conflicts.map((c, idx) => (
+                  <li key={idx}>{c.reason} ({c.item?.date} {c.item?.start}-{c.item?.end})</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {validation.warnings?.length > 0 && (
+            <div style={{ background: "#fff8e1", padding: "15px", borderRadius: "5px", marginBottom: "10px" }}>
+              <strong>Warnings:</strong>
+              <ul style={{ margin: "8px 0 0 18px" }}>
+                {validation.warnings.map((w, idx) => (
+                  <li key={idx}>{w.date ? `${w.date}: ` : ''}{w.reason}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {validation.suggestions?.length > 0 && (
+            <div style={{ background: "#e3f2fd", padding: "15px", borderRadius: "5px" }}>
+              <strong>Suggestions:</strong>
+              <ul style={{ margin: "8px 0 0 18px" }}>
+                {validation.suggestions.map((s, idx) => (
+                  <li key={idx}>{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Add Time Block Modal */}
       {showAddBlock && (

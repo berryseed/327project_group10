@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TaskForm from "./TaskForm";
 import AITaskForm from "./components/AITaskForm";
 import TaskDashboard from "./components/TaskDashboard";
@@ -10,6 +10,22 @@ import UserAuth from "./components/UserAuth";
 
 function App() {
   const [currentView, setCurrentView] = useState('student-dashboard');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    setIsAuthenticated(!!token);
+  }, []);
+
+  const handleLoggedIn = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    setIsAuthenticated(false);
+    setCurrentView('auth');
+  };
 
   const renderView = () => {
     switch (currentView) {
@@ -24,6 +40,28 @@ function App() {
       default: return <StudentDashboard />;
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div>
+        <div style={{ 
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+          color: "white", 
+          padding: "30px 20px",
+          textAlign: "center"
+        }}>
+          <h1 style={{ margin: "0 0 10px 0", fontSize: "2.5rem" }}>🎓 Intelligent Student Task Planner</h1>
+          <p style={{ margin: "0", fontSize: "1.2rem", opacity: "0.9" }}>
+            Please log in to continue
+          </p>
+        </div>
+        <div style={{ maxWidth: "1200px", margin: "20px auto", padding: "20px" }}>
+          {/* Render auth view only when not authenticated */}
+          <UserAuth onLoggedIn={handleLoggedIn} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -118,7 +156,7 @@ function App() {
               transition: "all 0.3s ease"
             }}
           >
-            📝 Basic Form
+            📝 Task Form
           </button>
           
           <button
@@ -186,7 +224,24 @@ function App() {
               transition: "all 0.3s ease"
             }}
           >
-            🔐 Auth
+            🔐 Account
+          </button>
+
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: "12px 24px",
+              background: "#343a40",
+              color: "white",
+              border: "none",
+              borderRadius: "25px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "bold",
+              transition: "all 0.3s ease"
+            }}
+          >
+            🚪 Logout
           </button>
         </div>
       </div>

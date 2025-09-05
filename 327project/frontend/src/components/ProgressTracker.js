@@ -79,35 +79,35 @@ const ProgressTracker = () => {
     return distribution;
   };
 
-  const getWeeklyTrends = () => {
-    // Mock weekly trends data
-    const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-    const completed = [3, 5, 4, 6];
-    const planned = [5, 6, 5, 7];
+  // const getWeeklyTrends = () => {
+  //   // Mock weekly trends data
+  //   const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+  //   const completed = [3, 5, 4, 6];
+  //   const planned = [5, 6, 5, 7];
     
-    return { weeks, completed, planned };
-  };
+  //   return { weeks, completed, planned };
+  // };
 
-  const getProductivityHeatmap = () => {
-    // Mock heatmap data for the last 30 days
-    const heatmapData = [];
-    const today = new Date();
+  // const getProductivityHeatmap = () => {
+  //   // Mock heatmap data for the last 30 days
+  //   const heatmapData = [];
+  //   const today = new Date();
     
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
+  //   for (let i = 29; i >= 0; i--) {
+  //     const date = new Date(today);
+  //     date.setDate(date.getDate() - i);
       
-      // Mock productivity score (0-4)
-      const productivityScore = Math.floor(Math.random() * 5);
-      heatmapData.push({
-        date: date.toISOString().split('T')[0],
-        score: productivityScore,
-        tasksCompleted: Math.floor(Math.random() * 5)
-      });
-    }
+  //     // Mock productivity score (0-4)
+  //     const productivityScore = Math.floor(Math.random() * 5);
+  //     heatmapData.push({
+  //       date: date.toISOString().split('T')[0],
+  //       score: productivityScore,
+  //       tasksCompleted: Math.floor(Math.random() * 5)
+  //     });
+  //   }
     
-    return heatmapData;
-  };
+  //   return heatmapData;
+  // };
 
   if (loading) {
     return (
@@ -121,8 +121,8 @@ const ProgressTracker = () => {
   const timeAccuracy = calculateAverageTimeAccuracy();
   const coursePerformance = getCoursePerformance();
   const priorityDistribution = getPriorityDistribution();
-  const weeklyTrends = getWeeklyTrends();
-  const heatmapData = getProductivityHeatmap();
+  // const weeklyTrends = getWeeklyTrends();
+  // const heatmapData = getProductivityHeatmap();
 
   return (
     <div style={{ maxWidth: "1200px", margin: "20px auto", padding: "20px" }}>
@@ -214,67 +214,7 @@ const ProgressTracker = () => {
           </div>
         </div>
 
-        {/* Weekly Trends */}
-        <div style={{ marginBottom: "30px" }}>
-          <h3>📈 Weekly Trends</h3>
-          <div style={{ background: "#f8f9fa", padding: "20px", borderRadius: "5px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end", height: "200px", marginBottom: "10px" }}>
-              {weeklyTrends.weeks.map((week, index) => (
-                <div key={week} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
-                    <div style={{ background: "#28a745", width: "20px", height: `${(weeklyTrends.completed[index] / Math.max(...weeklyTrends.completed)) * 150}px`, borderRadius: "3px" }} />
-                    <div style={{ background: "#6c757d", width: "20px", height: `${(weeklyTrends.planned[index] / Math.max(...weeklyTrends.planned)) * 150}px`, borderRadius: "3px" }} />
-                  </div>
-                  <div style={{ marginTop: "10px", fontSize: "12px", color: "#666" }}>{week}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                <div style={{ width: "15px", height: "15px", background: "#28a745", borderRadius: "3px" }} />
-                <span style={{ fontSize: "14px" }}>Completed</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                <div style={{ width: "15px", height: "15px", background: "#6c757d", borderRadius: "3px" }} />
-                <span style={{ fontSize: "14px" }}>Planned</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Productivity Heatmap */}
-        <div style={{ marginBottom: "30px" }}>
-          <h3>🔥 Productivity Heatmap (Last 30 Days)</h3>
-          <div style={{ background: "#f8f9fa", padding: "20px", borderRadius: "5px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px", marginBottom: "10px" }}>
-              {heatmapData.map((day, index) => (
-                <div
-                  key={index}
-                  style={{
-                    width: "20px",
-                    height: "20px",
-                    background: getHeatmapColor(day.score),
-                    borderRadius: "3px",
-                    cursor: "pointer",
-                    position: "relative"
-                  }}
-                  title={`${day.date}: ${day.tasksCompleted} tasks completed`}
-                />
-              ))}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#666" }}>
-              <span>Less</span>
-              <div style={{ display: "flex", gap: "5px" }}>
-                <div style={{ width: "10px", height: "10px", background: "#ebedf0", borderRadius: "2px" }} />
-                <div style={{ width: "10px", height: "10px", background: "#c6e48b", borderRadius: "2px" }} />
-                <div style={{ width: "10px", height: "10px", background: "#7bc96f", borderRadius: "2px" }} />
-                <div style={{ width: "10px", height: "10px", background: "#239a3b", borderRadius: "2px" }} />
-                <div style={{ width: "10px", height: "10px", background: "#196127", borderRadius: "2px" }} />
-              </div>
-              <span>More</span>
-            </div>
-          </div>
-        </div>
+        
 
         {/* Study Session Analytics */}
         {analytics && (
@@ -326,15 +266,15 @@ const getPriorityColor = (priority) => {
   }
 };
 
-const getHeatmapColor = (score) => {
-  switch (score) {
-    case 0: return '#ebedf0';
-    case 1: return '#c6e48b';
-    case 2: return '#7bc96f';
-    case 3: return '#239a3b';
-    case 4: return '#196127';
-    default: return '#ebedf0';
-  }
-};
+// const getHeatmapColor = (score) => {
+//   switch (score) {
+//     case 0: return '#ebedf0';
+//     case 1: return '#c6e48b';
+//     case 2: return '#7bc96f';
+//     case 3: return '#239a3b';
+//     case 4: return '#196127';
+//     default: return '#ebedf0';
+//   }
+// };
 
 export default ProgressTracker;
